@@ -1,0 +1,4512 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Spese" />
+<title>Le Mie Spese</title>
+<style>
+:root {
+  --bg: #f4f5f7;
+  --card-bg: #ffffff;
+  --text: #1c1e21;
+  --muted: #6b7280;
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --danger: #dc2626;
+  --ok: #16a34a;
+  --warn: #d97706;
+  --border: #e5e7eb;
+  --radius: 12px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+h1 { font-size: 1.25rem; margin: 0; }
+h2 { font-size: 1.1rem; margin: 0 0 8px; }
+h3 { font-size: 0.95rem; margin: 20px 0 8px; color: var(--muted); }
+.muted { color: var(--muted); font-size: 0.9rem; }
+
+/* ---- Login ---- */
+#auth-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.auth-box {
+  background: var(--card-bg);
+  padding: 28px 22px;
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 360px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+.auth-box h1 { text-align: center; margin-bottom: 4px; }
+.auth-box p.muted { text-align: center; margin-bottom: 20px; }
+
+/* ---- Layout app ---- */
+#app { display: flex; flex-direction: column; min-height: 100vh; }
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding-top: max(14px, env(safe-area-inset-top));
+}
+#views {
+  flex: 1;
+  padding: 16px;
+  padding-bottom: 90px;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+}
+.view { animation: fadein .15s ease-in; }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---- Tabbar ---- */
+.tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  background: var(--card-bg);
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 10;
+}
+.tab-btn {
+  flex: 1;
+  border: none;
+  background: none;
+  padding: 10px 4px 8px;
+  font-size: 1.2rem;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.tab-btn span { font-size: 0.65rem; }
+.tab-btn.active { color: var(--primary); }
+
+/* ---- Form elements ---- */
+label {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: 12px 0 4px;
+}
+input[type=text], input[type=email], input[type=password], input[type=number],
+input[type=date], input[type=month], input[type=file], select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  background: var(--card-bg);
+  color: var(--text);
+}
+textarea { resize: vertical; font-family: inherit; }
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+}
+.btn.primary { background: var(--primary); color: white; }
+.btn.primary:active { background: var(--primary-dark); }
+.btn.ghost { background: transparent; color: var(--primary); border: 1px solid var(--border); }
+.btn.link { background: none; color: var(--primary); font-weight: 500; padding: 8px; width: 100%; }
+.btn.small { padding: 8px 12px; font-size: 0.85rem; background: var(--primary); color: white; }
+.btn.danger-outline { background: none; color: var(--danger); border: 1px solid var(--danger); padding: 6px 10px; font-size: 0.8rem; }
+.btn.full { width: 100%; }
+
+.message { font-size: 0.85rem; margin-top: 10px; min-height: 1em; }
+.message.error { color: var(--danger); }
+.message.success { color: var(--ok); }
+
+hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+/* ---- Liste ---- */
+.list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.list-item {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+}
+.list-item .li-main { flex: 1; min-width: 0; }
+.list-item .li-title { font-weight: 600; font-size: 0.95rem; }
+.list-item .li-sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+.list-item .li-amount { font-weight: 700; white-space: nowrap; }
+.list-item.status-matched { border-left: 4px solid var(--ok); }
+.list-item.status-discrepancy { border-left: 4px solid var(--warn); }
+
+.filters { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.filters > * { flex: 1; min-width: 110px; }
+
+.total-badge {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.summary-cards { display: flex; gap: 8px; margin: 10px 0; }
+.card {
+  flex: 1;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  text-align: center;
+}
+.card span { display: block; font-size: 1.2rem; font-weight: 700; }
+.card small { color: var(--muted); font-size: 0.72rem; }
+.card.ok span { color: var(--ok); }
+.card.warn span { color: var(--warn); }
+
+.add-row { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+.add-row input[type=text] { flex: 1; min-width: 140px; }
+.checkbox-inline { display: flex; align-items: center; gap: 4px; font-size: 0.82rem; color: var(--muted); }
+.checkbox-inline input { width: auto; }
+
+canvas { margin: 6px 0 20px; }
+
+</style>
+<!-- Supabase client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<!-- CSV parsing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<!-- Excel parsing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- Grafici -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ============ SCHERMATA LOGIN ============ -->
+<div id="auth-screen" class="screen">
+  <div class="auth-box">
+    <h1>💶 Le Mie Spese</h1>
+    <p class="muted">Accedi per continuare</p>
+    <form id="login-form">
+      <label>Email</label>
+      <input type="email" id="login-email" required autocomplete="username" />
+      <label>Password</label>
+      <input type="password" id="login-password" required autocomplete="current-password" />
+      <button type="submit" class="btn primary">Accedi</button>
+    </form>
+    <button id="show-signup" class="btn link">Non hai un account? Registrati</button>
+    <button id="show-login" class="btn link" style="display:none">Hai già un account? Accedi</button>
+    <form id="signup-form" style="display:none">
+      <label>Email</label>
+      <input type="email" id="signup-email" required autocomplete="username" />
+      <label>Password (minimo 6 caratteri)</label>
+      <input type="password" id="signup-password" required autocomplete="new-password" />
+      <button type="submit" class="btn primary">Crea account</button>
+    </form>
+    <p id="auth-message" class="message"></p>
+  </div>
+</div>
+
+<!-- ============ APP PRINCIPALE ============ -->
+<div id="app" class="screen" style="display:none">
+
+  <header class="topbar">
+    <h1>💶 Le Mie Spese</h1>
+    <button id="logout-btn" class="btn ghost small">Esci</button>
+  </header>
+
+  <main id="views">
+
+    <!-- ---- Nuova spesa ---- -->
+    <section id="view-new" class="view">
+      <h2>Nuova spesa</h2>
+      <p class="muted">Tocca il campo, poi usa il microfono della tastiera di iOS per dettare (es. "caffè al bar due euro contanti"), oppure scrivi a mano. Tocca "Interpreta" per far leggere il testo all'app.</p>
+      <textarea id="voice-input" rows="2" placeholder="Es: spesa al supermercato 42 euro e 50 con la carta"></textarea>
+      <button id="parse-btn" class="btn primary full">Interpreta</button>
+
+      <div id="expense-confirm" style="display:none">
+        <hr />
+        <label>Importo (€)</label>
+        <input type="number" step="0.01" id="f-amount" />
+
+        <label>Descrizione</label>
+        <input type="text" id="f-description" />
+
+        <label>Categoria</label>
+        <select id="f-category"></select>
+
+        <label>Metodo di pagamento</label>
+        <select id="f-payment"></select>
+
+        <label>Data</label>
+        <input type="date" id="f-date" />
+
+        <button id="save-expense-btn" class="btn primary full">Salva spesa</button>
+        <button id="cancel-expense-btn" class="btn ghost full">Annulla</button>
+      </div>
+      <p id="new-expense-message" class="message"></p>
+    </section>
+
+    <!-- ---- Elenco spese ---- -->
+    <section id="view-list" class="view" style="display:none">
+      <h2>Le tue spese</h2>
+      <div class="filters">
+        <input type="month" id="filter-month" />
+        <select id="filter-category"></select>
+        <select id="filter-payment"></select>
+      </div>
+      <div id="expenses-total" class="total-badge"></div>
+      <div id="expenses-list" class="list"></div>
+    </section>
+
+    <!-- ---- Riconciliazione ---- -->
+    <section id="view-reconcile" class="view" style="display:none">
+      <h2>Riconciliazione estratti conto</h2>
+      <p class="muted">Carica il file (CSV o Excel) esportato dalla tua banca, da Satispay o da PayPal. I contanti non vengono riconciliati.</p>
+
+      <label>Origine del file</label>
+      <select id="import-source">
+        <option>Banca</option>
+        <option>Satispay</option>
+        <option>PayPal</option>
+      </select>
+
+      <label>File estratto conto</label>
+      <input type="file" id="import-file" accept=".csv,.xlsx,.xls" />
+
+      <div id="column-mapping" style="display:none">
+        <hr />
+        <p><strong>Indica quale colonna contiene cosa:</strong></p>
+        <label>Colonna Data</label>
+        <select id="map-date"></select>
+        <label>Colonna Importo</label>
+        <select id="map-amount"></select>
+        <label>Colonna Descrizione</label>
+        <select id="map-description"></select>
+        <button id="run-reconcile-btn" class="btn primary full">Avvia riconciliazione</button>
+      </div>
+
+      <p id="reconcile-message" class="message"></p>
+
+      <div id="reconcile-results" style="display:none">
+        <hr />
+        <h3>Risultati</h3>
+        <div class="summary-cards">
+          <div class="card ok"><span id="count-matched">0</span><small>Corrispondenti</small></div>
+          <div class="card warn"><span id="count-unmatched-bank">0</span><small>Addebiti senza spesa</small></div>
+          <div class="card warn"><span id="count-unmatched-expense">0</span><small>Spese senza addebito</small></div>
+        </div>
+        <div id="reconcile-list" class="list"></div>
+      </div>
+    </section>
+
+    <!-- ---- Report ---- -->
+    <section id="view-reports" class="view" style="display:none">
+      <h2>Report</h2>
+      <div class="filters">
+        <select id="report-period">
+          <option value="week">Settimana</option>
+          <option value="month" selected>Mese</option>
+          <option value="year">Anno</option>
+        </select>
+        <input type="month" id="report-month" />
+      </div>
+
+      <div class="summary-cards">
+        <div class="card"><span id="report-total">€0</span><small>Totale periodo</small></div>
+        <div class="card"><span id="report-diff">-</span><small>Vs periodo precedente</small></div>
+      </div>
+
+      <h3>Per categoria</h3>
+      <canvas id="chart-category" height="220"></canvas>
+
+      <h3>Andamento nel tempo</h3>
+      <canvas id="chart-trend" height="220"></canvas>
+
+      <h3>Per metodo di pagamento</h3>
+      <canvas id="chart-payment" height="220"></canvas>
+    </section>
+
+    <!-- ---- Impostazioni ---- -->
+    <section id="view-settings" class="view" style="display:none">
+      <h2>Impostazioni</h2>
+      <h3>Categorie</h3>
+      <div id="categories-list" class="list"></div>
+      <div class="add-row">
+        <input type="text" id="new-category-name" placeholder="Nuova categoria" />
+        <button id="add-category-btn" class="btn small">Aggiungi</button>
+      </div>
+
+      <h3>Metodi di pagamento</h3>
+      <div id="payments-list" class="list"></div>
+      <div class="add-row">
+        <input type="text" id="new-payment-name" placeholder="Nuovo metodo" />
+        <label class="checkbox-inline"><input type="checkbox" id="new-payment-reconcilable" checked /> Riconciliabile</label>
+        <button id="add-payment-btn" class="btn small">Aggiungi</button>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-view="view-new">➕<span>Nuova</span></button>
+    <button class="tab-btn" data-view="view-list">📋<span>Spese</span></button>
+    <button class="tab-btn" data-view="view-reconcile">🔄<span>Verifica</span></button>
+    <button class="tab-btn" data-view="view-reports">📊<span>Report</span></button>
+    <button class="tab-btn" data-view="view-settings">⚙️<span>Impostazioni</span></button>
+  </nav>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ===== config.js ===== */
+// ============================================================
+// CONFIGURAZIONE — progetto Supabase "Le mie spese"
+// Questi valori sono già compilati e pronti all'uso.
+// (La publishable key è pensata per essere pubblica: l'accesso
+//  ai dati è protetto dal login e dalle regole RLS del database.)
+// ============================================================
+const SUPABASE_URL = "https://vtkawdyochpjampfufne.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_3QFz97phvuNtMnfPd6E4RQ_8_JkDnaz";
+
+
+/* ===== supabaseClient.js ===== */
+
+// La libreria Supabase è caricata da CDN in index.html e crea l'oggetto globale `supabase`.
+// Qui creiamo il client vero e proprio che useremo in tutta l'app.
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+
+/* ===== store.js ===== */
+
+// Cache in memoria di categorie e metodi di pagamento dell'utente corrente,
+// così non li richiediamo al database ad ogni cambio di schermata.
+const state = {
+  userId: null,
+  categories: [],
+  paymentMethods: [],
+};
+
+async function loadLookups(userId) {
+  state.userId = userId;
+  const [{ data: cats, error: catErr }, { data: pays, error: payErr }] = await Promise.all([
+    sb.from("categories").select("*").eq("user_id", userId).order("sort_order"),
+    sb.from("payment_methods").select("*").eq("user_id", userId).order("sort_order"),
+  ]);
+  if (catErr) console.error(catErr);
+  if (payErr) console.error(payErr);
+  state.categories = cats || [];
+  state.paymentMethods = pays || [];
+}
+
+function categoryName(id) {
+  return state.categories.find((c) => c.id === id)?.name || "—";
+}
+
+function paymentName(id) {
+  return state.paymentMethods.find((p) => p.id === id)?.name || "—";
+}
+
+function isReconcilable(paymentId) {
+  return !!state.paymentMethods.find((p) => p.id === paymentId)?.reconcilable;
+}
+
+async function addCategory(name) {
+  const sort_order = state.categories.length + 1;
+  const { data, error } = await sb
+    .from("categories")
+    .insert({ user_id: state.userId, name, sort_order })
+    .select()
+    .single();
+  if (error) throw error;
+  state.categories.push(data);
+  return data;
+}
+
+async function deleteCategory(id) {
+  const { error } = await sb.from("categories").delete().eq("id", id);
+  if (error) throw error;
+  state.categories = state.categories.filter((c) => c.id !== id);
+}
+
+async function addPaymentMethod(name, reconcilable) {
+  const sort_order = state.paymentMethods.length + 1;
+  const { data, error } = await sb
+    .from("payment_methods")
+    .insert({ user_id: state.userId, name, reconcilable, sort_order })
+    .select()
+    .single();
+  if (error) throw error;
+  state.paymentMethods.push(data);
+  return data;
+}
+
+async function deletePaymentMethod(id) {
+  const { error } = await sb.from("payment_methods").delete().eq("id", id);
+  if (error) throw error;
+  state.paymentMethods = state.paymentMethods.filter((p) => p.id !== id);
+}
+
+// ---- helper per riempire i menu a tendina nella UI ----
+function fillSelect(selectEl, items, { includeAll = false, allLabel = "Tutte" } = {}) {
+  selectEl.innerHTML = "";
+  if (includeAll) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = allLabel;
+    selectEl.appendChild(opt);
+  }
+  for (const item of items) {
+    const opt = document.createElement("option");
+    opt.value = item.id;
+    opt.textContent = item.name;
+    selectEl.appendChild(opt);
+  }
+}
+
+
+/* ===== parser.js ===== */
+// ============================================================
+// Interpretazione del testo dettato/scritto per estrarre
+// importo, categoria, metodo di pagamento e data.
+// Tutto gira in locale nel telefono, nessun servizio esterno.
+// ============================================================
+
+// Numeri scritti in lettere (l'iOS a volte non li converte tutti in cifre)
+const WORD_NUMBERS = {
+  "zero": 0, "un": 1, "uno": 1, "una": 1, "due": 2, "tre": 3, "quattro": 4,
+  "cinque": 5, "sei": 6, "sette": 7, "otto": 8, "nove": 9, "dieci": 10,
+  "undici": 11, "dodici": 12, "tredici": 13, "quattordici": 14, "quindici": 15,
+  "sedici": 16, "diciassette": 17, "diciotto": 18, "diciannove": 19, "venti": 20,
+  "trenta": 30, "quaranta": 40, "cinquanta": 50, "sessanta": 60,
+  "settanta": 70, "ottanta": 80, "novanta": 90, "cento": 100
+};
+
+// Parole chiave -> nome categoria di default (usate come fallback se il
+// testo non contiene già il nome esatto di una categoria dell'utente)
+const CATEGORY_KEYWORDS = {
+  "Bar": ["bar", "caffè", "caffe", "cappuccino", "cornetto", "brioche", "aperitivo"],
+  "Spesa": ["spesa", "supermercato", "super mercato", "alimentari", "esselunga", "conad", "coop", "carrefour", "lidl"],
+  "Carburante": ["benzina", "carburante", "diesel", "gasolio", "distributore", "rifornimento"],
+  "Ristorante": ["ristorante", "pizzeria", "trattoria", "cena fuori", "pranzo fuori", "sushi", "kebab"],
+  "Trasporti": ["treno", "autobus", "bus", "metro", "metropolitana", "taxi", "parcheggio", "autostrada", "pedaggio", "biglietto"],
+  "Salute": ["farmacia", "medico", "dottore", "dentista", "visita medica", "parafarmacia"],
+  "Casa": ["affitto", "bolletta", "bollette", "condominio", "luce", "gas", "internet", "casa"],
+  "Abbigliamento": ["vestiti", "abbigliamento", "scarpe", "negozio", "zara", "h&m"],
+  "Tempo libero": ["cinema", "cinema", "concerto", "palestra", "sport", "libro", "videogioco", "netflix", "abbonamento"],
+};
+
+// Parole chiave -> nome metodo di pagamento
+const PAYMENT_KEYWORDS = {
+  "Contanti": ["contanti", "cash", "contante"],
+  "Carta di credito": ["carta di credito", "carta credito", "con la carta", "carta bancomat", "bancomat", "carta"],
+  "Satispay": ["satispay"],
+  "PayPal": ["paypal", "pay pal"],
+  "Bonifico": ["bonifico", "bonifico bancario"],
+};
+
+function normalize(text) {
+  return text.toLowerCase().trim();
+}
+
+function extractAmount(text) {
+  // Prova prima con "X euro e Y (centesimi)", perché va controllata
+  // prima del semplice "X euro" (altrimenti si fermerebbe a "X").
+  const euroECent = text.match(/(\d+)\s*euro\s*e\s*(\d+)/i);
+  if (euroECent) {
+    return parseFloat(`${euroECent[1]}.${euroECent[2].padStart(2, "0").slice(0, 2)}`);
+  }
+
+  // Cerca pattern tipo "12,50" "12.50" "12" seguiti/preceduti da euro o €
+  const patterns = [
+    /(\d+[.,]\d{1,2})\s*(?:€|euro)/i,
+    /€\s*(\d+[.,]\d{1,2})/i,
+    /(\d+)\s*(?:€|euro)/i,
+    /€\s*(\d+)/i,
+    /(\d+[.,]\d{1,2})/,
+  ];
+  for (const p of patterns) {
+    const m = text.match(p);
+    if (m) {
+      return parseFloat(m[1].replace(",", "."));
+    }
+  }
+
+  // Prova a interpretare numeri scritti in lettere prima di "euro"
+  const words = text.split(/\s+/);
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i].replace(/[^\wàèéìòù]/gi, "");
+    if (WORD_NUMBERS[w] !== undefined && /euro/i.test(words[i + 1] || "")) {
+      return WORD_NUMBERS[w];
+    }
+  }
+
+  return null;
+}
+
+function extractCategory(text, userCategories) {
+  // 1) match diretto: il testo contiene già il nome esatto di una categoria dell'utente
+  for (const cat of userCategories) {
+    if (text.includes(cat.name.toLowerCase())) return cat.id;
+  }
+  // 2) match tramite parole chiave, poi cerchiamo la categoria dell'utente con quel nome
+  for (const [catName, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+    if (keywords.some((k) => text.includes(k))) {
+      const found = userCategories.find((c) => c.name.toLowerCase() === catName.toLowerCase());
+      if (found) return found.id;
+    }
+  }
+  return null;
+}
+
+function extractPayment(text, userPayments) {
+  for (const [payName, keywords] of Object.entries(PAYMENT_KEYWORDS)) {
+    if (keywords.some((k) => text.includes(k))) {
+      const found = userPayments.find((p) => p.name.toLowerCase() === payName.toLowerCase());
+      if (found) return found.id;
+    }
+  }
+  return null;
+}
+
+function extractDate(text) {
+  const today = new Date();
+  if (/\bieri\b/.test(text)) {
+    today.setDate(today.getDate() - 1);
+  } else if (/l['\s]?altro\s*ieri/.test(text)) {
+    today.setDate(today.getDate() - 2);
+  }
+  return today.toISOString().slice(0, 10);
+}
+
+function buildDescription(text, amount) {
+  let desc = text;
+  // rimuove per prima cosa il pattern "X euro e Y" (es. "42 euro e 50")
+  desc = desc.replace(/\d+\s*euro\s*e\s*\d+/gi, " ");
+  // rimuove l'importo e la parola euro/€ dal testo per lasciare solo la descrizione
+  desc = desc.replace(/(\d+[.,]?\d*)\s*(?:€|euro)?/gi, " ");
+  desc = desc.replace(/€/g, " ");
+  // rimuove le parole chiave di metodo pagamento più comuni
+  for (const keywords of Object.values(PAYMENT_KEYWORDS)) {
+    for (const k of keywords) {
+      desc = desc.replace(new RegExp(k, "gi"), " ");
+    }
+  }
+  desc = desc.replace(/\bcon\s+la\b|\bcon\b|\be\s+centesimi\b|\bieri\b|\boggi\b/gi, " ");
+  desc = desc.replace(/\s+/g, " ").trim();
+  if (!desc) desc = text.trim();
+  // capitalizza la prima lettera
+  return desc.charAt(0).toUpperCase() + desc.slice(1);
+}
+
+/**
+ * Interpreta il testo dettato e restituisce i campi individuati.
+ * Ogni campo può essere null se non è stato riconosciuto: la UI
+ * chiederà comunque conferma/completamento all'utente prima di salvare.
+ */
+function parseExpenseText(rawText, userCategories, userPayments) {
+  const text = normalize(rawText);
+  const amount = extractAmount(text);
+  const categoryId = extractCategory(text, userCategories);
+  const paymentMethodId = extractPayment(text, userPayments);
+  const date = extractDate(text);
+  const description = buildDescription(rawText, amount);
+
+  return { amount, description, categoryId, paymentMethodId, date, rawText };
+}
+
+
+/* ===== auth.js ===== */
+
+const authScreen = document.getElementById("auth-screen");
+const appScreen = document.getElementById("app");
+const authMessage = document.getElementById("auth-message");
+
+const loginForm = document.getElementById("login-form");
+const signupForm = document.getElementById("signup-form");
+const showSignupBtn = document.getElementById("show-signup");
+const showLoginBtn = document.getElementById("show-login");
+const logoutBtn = document.getElementById("logout-btn");
+
+showSignupBtn.addEventListener("click", () => {
+  loginForm.style.display = "none";
+  showSignupBtn.style.display = "none";
+  signupForm.style.display = "block";
+  showLoginBtn.style.display = "block";
+  authMessage.textContent = "";
+});
+
+showLoginBtn.addEventListener("click", () => {
+  signupForm.style.display = "none";
+  showLoginBtn.style.display = "none";
+  loginForm.style.display = "block";
+  showSignupBtn.style.display = "block";
+  authMessage.textContent = "";
+});
+
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  authMessage.className = "message";
+  authMessage.textContent = "Accesso in corso...";
+  const email = document.getElementById("login-email").value.trim();
+  const password = document.getElementById("login-password").value;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    authMessage.className = "message error";
+    authMessage.textContent = "Errore: " + error.message;
+  }
+});
+
+signupForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  authMessage.className = "message";
+  authMessage.textContent = "Creazione account...";
+  const email = document.getElementById("signup-email").value.trim();
+  const password = document.getElementById("signup-password").value;
+  const { error } = await sb.auth.signUp({ email, password });
+  if (error) {
+    authMessage.className = "message error";
+    authMessage.textContent = "Errore: " + error.message;
+  } else {
+    authMessage.className = "message success";
+    authMessage.textContent = "Account creato! Se richiesto, controlla la mail per confermare, poi accedi.";
+  }
+});
+
+logoutBtn.addEventListener("click", async () => {
+  await sb.auth.signOut();
+});
+
+// Funzione chiamata da main.js quando l'utente è autenticato,
+// per far partire il caricamento dati dell'app
+let onAuthReadyCallback = null;
+function onAuthReady(cb) {
+  onAuthReadyCallback = cb;
+}
+
+function showApp() {
+  authScreen.style.display = "none";
+  appScreen.style.display = "flex";
+}
+
+function showAuth() {
+  appScreen.style.display = "none";
+  authScreen.style.display = "flex";
+}
+
+sb.auth.onAuthStateChange((event, session) => {
+  if (session) {
+    showApp();
+    if (onAuthReadyCallback) onAuthReadyCallback(session.user);
+  } else {
+    showAuth();
+  }
+});
+
+// Controllo iniziale (nel caso la sessione sia già salvata dal browser)
+async function checkInitialSession() {
+  const { data } = await sb.auth.getSession();
+  if (data.session) {
+    showApp();
+    if (onAuthReadyCallback) onAuthReadyCallback(data.session.user);
+  } else {
+    showAuth();
+  }
+}
+
+
+/* ===== expenses.js ===== */
+
+
+
+// ============================================================
+// VISTA "Nuova spesa"
+// ============================================================
+const voiceInput = document.getElementById("voice-input");
+const parseBtn = document.getElementById("parse-btn");
+const confirmBox = document.getElementById("expense-confirm");
+const fAmount = document.getElementById("f-amount");
+const fDescription = document.getElementById("f-description");
+const fCategory = document.getElementById("f-category");
+const fPayment = document.getElementById("f-payment");
+const fDate = document.getElementById("f-date");
+const saveBtn = document.getElementById("save-expense-btn");
+const cancelBtn = document.getElementById("cancel-expense-btn");
+const newExpenseMessage = document.getElementById("new-expense-message");
+
+let lastRawText = "";
+
+function initNewExpenseView() {
+  fillSelect(fCategory, state.categories);
+  fillSelect(fPayment, state.paymentMethods);
+}
+
+parseBtn.addEventListener("click", () => {
+  const text = voiceInput.value.trim();
+  if (!text) return;
+  lastRawText = text;
+  const parsed = parseExpenseText(text, state.categories, state.paymentMethods);
+
+  fAmount.value = parsed.amount ?? "";
+  fDescription.value = parsed.description || "";
+  fDate.value = parsed.date;
+
+  fillSelect(fCategory, state.categories);
+  if (parsed.categoryId) fCategory.value = parsed.categoryId;
+
+  fillSelect(fPayment, state.paymentMethods);
+  if (parsed.paymentMethodId) fPayment.value = parsed.paymentMethodId;
+
+  confirmBox.style.display = "block";
+  newExpenseMessage.textContent = "";
+
+  if (!parsed.amount) {
+    newExpenseMessage.className = "message error";
+    newExpenseMessage.textContent = "Non ho capito l'importo: controllalo prima di salvare.";
+  }
+});
+
+cancelBtn.addEventListener("click", () => {
+  confirmBox.style.display = "none";
+  voiceInput.value = "";
+  newExpenseMessage.textContent = "";
+});
+
+saveBtn.addEventListener("click", async () => {
+  const amount = parseFloat(fAmount.value);
+  if (!amount || amount <= 0) {
+    newExpenseMessage.className = "message error";
+    newExpenseMessage.textContent = "Inserisci un importo valido.";
+    return;
+  }
+  const paymentMethodId = fPayment.value || null;
+  const reconciliation_status = paymentMethodId && isReconcilable(paymentMethodId) ? "pending" : "na";
+
+  const { error } = await sb.from("expenses").insert({
+    user_id: state.userId,
+    amount,
+    description: fDescription.value.trim(),
+    category_id: fCategory.value || null,
+    payment_method_id: paymentMethodId,
+    expense_date: fDate.value,
+    raw_input: lastRawText,
+    reconciliation_status,
+  });
+
+  if (error) {
+    newExpenseMessage.className = "message error";
+    newExpenseMessage.textContent = "Errore nel salvataggio: " + error.message;
+    return;
+  }
+
+  newExpenseMessage.className = "message success";
+  newExpenseMessage.textContent = "Spesa salvata!";
+  confirmBox.style.display = "none";
+  voiceInput.value = "";
+  setTimeout(() => (newExpenseMessage.textContent = ""), 2500);
+});
+
+// ============================================================
+// VISTA "Elenco spese"
+// ============================================================
+const filterMonth = document.getElementById("filter-month");
+const filterCategory = document.getElementById("filter-category");
+const filterPayment = document.getElementById("filter-payment");
+const expensesList = document.getElementById("expenses-list");
+const expensesTotal = document.getElementById("expenses-total");
+
+async function initListView() {
+  fillSelect(filterCategory, state.categories, { includeAll: true, allLabel: "Tutte le categorie" });
+  fillSelect(filterPayment, state.paymentMethods, { includeAll: true, allLabel: "Tutti i metodi" });
+  if (!filterMonth.value) {
+    filterMonth.value = new Date().toISOString().slice(0, 7);
+  }
+  await refreshList();
+}
+
+filterMonth.addEventListener("change", refreshList);
+filterCategory.addEventListener("change", refreshList);
+filterPayment.addEventListener("change", refreshList);
+
+async function refreshList() {
+  let query = sb.from("expenses").select("*").eq("user_id", state.userId).order("expense_date", { ascending: false });
+
+  if (filterMonth.value) {
+    const [y, m] = filterMonth.value.split("-");
+    const start = `${y}-${m}-01`;
+    const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
+    const end = `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
+    query = query.gte("expense_date", start).lte("expense_date", end);
+  }
+  if (filterCategory.value) query = query.eq("category_id", filterCategory.value);
+  if (filterPayment.value) query = query.eq("payment_method_id", filterPayment.value);
+
+  const { data, error } = await query;
+  if (error) {
+    expensesList.innerHTML = `<p class="message error">Errore: ${error.message}</p>`;
+    return;
+  }
+
+  const total = data.reduce((sum, e) => sum + Number(e.amount), 0);
+  expensesTotal.textContent = `Totale: € ${total.toFixed(2)} (${data.length} spese)`;
+
+  expensesList.innerHTML = "";
+  if (data.length === 0) {
+    expensesList.innerHTML = `<p class="muted">Nessuna spesa trovata per questo filtro.</p>`;
+    return;
+  }
+
+  for (const exp of data) {
+    const item = document.createElement("div");
+    item.className = "list-item";
+    const statusLabel = {
+      na: "",
+      pending: "Da verificare",
+      matched: "✅ Verificata",
+      discrepancy: "⚠️ Discrepanza",
+    }[exp.reconciliation_status] || "";
+
+    item.innerHTML = `
+      <div class="li-main">
+        <div class="li-title">${exp.description || categoryName(exp.category_id)}</div>
+        <div class="li-sub">${exp.expense_date} · ${categoryName(exp.category_id)} · ${paymentName(exp.payment_method_id)} ${statusLabel ? "· " + statusLabel : ""}</div>
+      </div>
+      <div class="li-amount">€ ${Number(exp.amount).toFixed(2)}</div>
+      <button class="btn danger-outline" data-id="${exp.id}">Elimina</button>
+    `;
+    item.querySelector("button").addEventListener("click", async () => {
+      if (!confirm("Eliminare questa spesa?")) return;
+      const { error: delErr } = await sb.from("expenses").delete().eq("id", exp.id);
+      if (delErr) alert("Errore: " + delErr.message);
+      else refreshList();
+    });
+    expensesList.appendChild(item);
+  }
+}
+
+
+
+/* ===== settings.js ===== */
+
+
+const categoriesList = document.getElementById("categories-list");
+const paymentsList = document.getElementById("payments-list");
+const newCategoryName = document.getElementById("new-category-name");
+const addCategoryBtn = document.getElementById("add-category-btn");
+const newPaymentName = document.getElementById("new-payment-name");
+const newPaymentReconcilable = document.getElementById("new-payment-reconcilable");
+const addPaymentBtn = document.getElementById("add-payment-btn");
+
+function initSettingsView() {
+  renderCategories();
+  renderPayments();
+}
+
+function renderCategories() {
+  categoriesList.innerHTML = "";
+  for (const cat of state.categories) {
+    const row = document.createElement("div");
+    row.className = "list-item";
+    row.innerHTML = `<div class="li-main"><div class="li-title">${cat.name}</div></div>
+      <button class="btn danger-outline" data-id="${cat.id}">Elimina</button>`;
+    row.querySelector("button").addEventListener("click", async () => {
+      if (!confirm(`Eliminare la categoria "${cat.name}"? Le spese già registrate la manterranno come testo, ma non sarà più selezionabile.`)) return;
+      try {
+        await deleteCategory(cat.id);
+        renderCategories();
+      } catch (e) {
+        alert("Errore: " + e.message);
+      }
+    });
+    categoriesList.appendChild(row);
+  }
+}
+
+function renderPayments() {
+  paymentsList.innerHTML = "";
+  for (const pay of state.paymentMethods) {
+    const row = document.createElement("div");
+    row.className = "list-item";
+    row.innerHTML = `<div class="li-main"><div class="li-title">${pay.name}</div>
+      <div class="li-sub">${pay.reconcilable ? "Riconciliabile con estratto conto" : "Non riconciliabile (es. contanti)"}</div></div>
+      <button class="btn danger-outline" data-id="${pay.id}">Elimina</button>`;
+    row.querySelector("button").addEventListener("click", async () => {
+      if (!confirm(`Eliminare il metodo "${pay.name}"?`)) return;
+      try {
+        await deletePaymentMethod(pay.id);
+        renderPayments();
+      } catch (e) {
+        alert("Errore: " + e.message);
+      }
+    });
+    paymentsList.appendChild(row);
+  }
+}
+
+addCategoryBtn.addEventListener("click", async () => {
+  const name = newCategoryName.value.trim();
+  if (!name) return;
+  try {
+    await addCategory(name);
+    newCategoryName.value = "";
+    renderCategories();
+  } catch (e) {
+    alert("Errore: " + e.message);
+  }
+});
+
+addPaymentBtn.addEventListener("click", async () => {
+  const name = newPaymentName.value.trim();
+  if (!name) return;
+  try {
+    await addPaymentMethod(name, newPaymentReconcilable.checked);
+    newPaymentName.value = "";
+    renderPayments();
+  } catch (e) {
+    alert("Errore: " + e.message);
+  }
+});
+
+
+/* ===== reconciliation.js ===== */
+
+
+const sourceSelect = document.getElementById("import-source");
+const fileInput = document.getElementById("import-file");
+const mappingBox = document.getElementById("column-mapping");
+const mapDate = document.getElementById("map-date");
+const mapAmount = document.getElementById("map-amount");
+const mapDescription = document.getElementById("map-description");
+const runBtn = document.getElementById("run-reconcile-btn");
+const message = document.getElementById("reconcile-message");
+const resultsBox = document.getElementById("reconcile-results");
+const countMatched = document.getElementById("count-matched");
+const countUnmatchedBank = document.getElementById("count-unmatched-bank");
+const countUnmatchedExpense = document.getElementById("count-unmatched-expense");
+const reconcileList = document.getElementById("reconcile-list");
+
+let parsedRows = []; // array di oggetti { header: valore }
+let headers = [];
+
+function initReconcileView() {
+  fileInput.value = "";
+  mappingBox.style.display = "none";
+  resultsBox.style.display = "none";
+  message.textContent = "";
+}
+
+fileInput.addEventListener("change", async () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+  message.textContent = "Lettura file...";
+  try {
+    if (file.name.toLowerCase().endsWith(".csv")) {
+      await readCsv(file);
+    } else {
+      await readExcel(file);
+    }
+    if (parsedRows.length === 0) {
+      message.className = "message error";
+      message.textContent = "Il file non contiene righe leggibili.";
+      return;
+    }
+    headers = Object.keys(parsedRows[0]);
+    populateMappingSelects();
+    mappingBox.style.display = "block";
+    message.className = "message success";
+    message.textContent = `Letto file con ${parsedRows.length} righe. Controlla la corrispondenza delle colonne qui sotto.`;
+  } catch (e) {
+    message.className = "message error";
+    message.textContent = "Errore nella lettura del file: " + e.message;
+  }
+});
+
+function readCsv(file) {
+  return new Promise((resolve, reject) => {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (res) => {
+        parsedRows = res.data;
+        resolve();
+      },
+      error: reject,
+    });
+  });
+}
+
+async function readExcel(file) {
+  const buffer = await file.arrayBuffer();
+  const wb = XLSX.read(buffer, { type: "array" });
+  const firstSheet = wb.Sheets[wb.SheetNames[0]];
+  parsedRows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+}
+
+function populateMappingSelects() {
+  for (const sel of [mapDate, mapAmount, mapDescription]) {
+    sel.innerHTML = "";
+    for (const h of headers) {
+      const opt = document.createElement("option");
+      opt.value = h;
+      opt.textContent = h;
+      sel.appendChild(opt);
+    }
+  }
+  // prova a indovinare la colonna giusta guardando il nome dell'intestazione
+  guessColumn(mapDate, ["data", "date", "data valuta", "data contabile"]);
+  guessColumn(mapAmount, ["importo", "amount", "valore", "dare", "avere"]);
+  guessColumn(mapDescription, ["descrizione", "causale", "description", "dettaglio", "note"]);
+}
+
+function guessColumn(selectEl, candidates) {
+  const lowerHeaders = headers.map((h) => h.toLowerCase());
+  for (const c of candidates) {
+    const idx = lowerHeaders.findIndex((h) => h.includes(c));
+    if (idx >= 0) {
+      selectEl.value = headers[idx];
+      return;
+    }
+  }
+}
+
+function parseDateFlexible(value) {
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  const str = String(value).trim();
+  // formati comuni: 31/01/2026, 31-01-2026, 2026-01-31
+  let m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) {
+    const [, d, mo, y] = m;
+    return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  m = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if (m) {
+    const [, y, mo, d] = m;
+    return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  const d = new Date(str);
+  if (!isNaN(d)) return d.toISOString().slice(0, 10);
+  return null;
+}
+
+function parseAmountFlexible(value) {
+  if (typeof value === "number") return value;
+  let str = String(value).trim().replace(/[€\s]/g, "");
+  // formato italiano 1.234,56 -> 1234.56
+  if (/,\d{1,2}$/.test(str)) {
+    str = str.replace(/\./g, "").replace(",", ".");
+  }
+  const num = parseFloat(str);
+  return isNaN(num) ? null : num;
+}
+
+runBtn.addEventListener("click", async () => {
+  message.className = "message";
+  message.textContent = "Riconciliazione in corso...";
+
+  const source = sourceSelect.value;
+  const rows = parsedRows
+    .map((r) => ({
+      date: parseDateFlexible(r[mapDate.value]),
+      amount: parseAmountFlexible(r[mapAmount.value]),
+      description: String(r[mapDescription.value] || ""),
+    }))
+    .filter((r) => r.date && r.amount !== null && r.amount !== 0);
+
+  if (rows.length === 0) {
+    message.className = "message error";
+    message.textContent = "Nessuna riga valida trovata: controlla la corrispondenza delle colonne.";
+    return;
+  }
+
+  // 1) crea il record di import
+  const { data: importRow, error: importErr } = await sb
+    .from("statement_imports")
+    .insert({ user_id: state.userId, source, file_name: fileInput.files[0]?.name })
+    .select()
+    .single();
+  if (importErr) {
+    message.className = "message error";
+    message.textContent = "Errore: " + importErr.message;
+    return;
+  }
+
+  // 2) inserisce i movimenti
+  const txToInsert = rows.map((r) => ({
+    user_id: state.userId,
+    import_id: importRow.id,
+    amount: r.amount,
+    transaction_date: r.date,
+    description: r.description,
+    source,
+  }));
+  const { data: insertedTx, error: txErr } = await sb.from("bank_transactions").insert(txToInsert).select();
+  if (txErr) {
+    message.className = "message error";
+    message.textContent = "Errore nel salvataggio dei movimenti: " + txErr.message;
+    return;
+  }
+
+  // 3) prende le spese "pending" (riconciliabili, non ancora verificate)
+  const { data: pendingExpenses, error: expErr } = await sb
+    .from("expenses")
+    .select("*")
+    .eq("user_id", state.userId)
+    .eq("reconciliation_status", "pending");
+  if (expErr) {
+    message.className = "message error";
+    message.textContent = "Errore nel caricamento delle spese: " + expErr.message;
+    return;
+  }
+
+  const { matches, unmatchedTx, unmatchedExpenses } = matchTransactions(insertedTx, pendingExpenses);
+
+  // 4) applica gli aggiornamenti al database
+  for (const { tx, expense } of matches) {
+    await sb.from("bank_transactions").update({ status: "matched", matched_expense_id: expense.id }).eq("id", tx.id);
+    await sb.from("expenses").update({ reconciliation_status: "matched", matched_transaction_id: tx.id }).eq("id", expense.id);
+  }
+  if (unmatchedExpenses.length > 0) {
+    await sb.from("expenses").update({ reconciliation_status: "discrepancy" }).in("id", unmatchedExpenses.map((e) => e.id));
+  }
+
+  message.className = "message success";
+  message.textContent = `Riconciliazione completata: ${matches.length} corrispondenze trovate.`;
+  renderResults(matches, unmatchedTx, unmatchedExpenses);
+});
+
+// Matching per importo (uguale, tolleranza 1 centesimo) e data
+// (entro 3 giorni, per coprire i tempi di addebito di carte/bonifici).
+// Ogni movimento bancario può abbinarsi a una sola spesa.
+function matchTransactions(bankTxs, expenses) {
+  const availableExpenses = [...expenses];
+  const matches = [];
+  const unmatchedTx = [];
+
+  for (const tx of bankTxs) {
+    const txAmount = Math.abs(tx.amount);
+    const txDate = new Date(tx.transaction_date);
+
+    let bestIdx = -1;
+    let bestDiffDays = Infinity;
+    availableExpenses.forEach((exp, idx) => {
+      const amountMatches = Math.abs(Number(exp.amount) - txAmount) < 0.01;
+      if (!amountMatches) return;
+      const expDate = new Date(exp.expense_date);
+      const diffDays = Math.abs((txDate - expDate) / 86400000);
+      if (diffDays <= 3 && diffDays < bestDiffDays) {
+        bestDiffDays = diffDays;
+        bestIdx = idx;
+      }
+    });
+
+    if (bestIdx >= 0) {
+      const [expense] = availableExpenses.splice(bestIdx, 1);
+      matches.push({ tx, expense });
+    } else {
+      unmatchedTx.push(tx);
+    }
+  }
+
+  return { matches, unmatchedTx, unmatchedExpenses: availableExpenses };
+}
+
+function renderResults(matches, unmatchedTx, unmatchedExpenses) {
+  resultsBox.style.display = "block";
+  countMatched.textContent = matches.length;
+  countUnmatchedBank.textContent = unmatchedTx.length;
+  countUnmatchedExpense.textContent = unmatchedExpenses.length;
+
+  reconcileList.innerHTML = "";
+
+  for (const { tx, expense } of matches) {
+    reconcileList.appendChild(
+      row("status-matched", `✅ € ${Math.abs(tx.amount).toFixed(2)}`, `${tx.transaction_date} · ${tx.description || "movimento"} ↔ spesa "${expense.description || categoryName(expense.category_id)}"`)
+    );
+  }
+  for (const tx of unmatchedTx) {
+    reconcileList.appendChild(
+      row("status-discrepancy", `⚠️ € ${Math.abs(tx.amount).toFixed(2)}`, `${tx.transaction_date} · ${tx.description || "movimento"} — addebito senza spesa registrata corrispondente`)
+    );
+  }
+  for (const exp of unmatchedExpenses) {
+    reconcileList.appendChild(
+      row("status-discrepancy", `⚠️ € ${Number(exp.amount).toFixed(2)}`, `${exp.expense_date} · ${exp.description || categoryName(exp.category_id)} (${paymentName(exp.payment_method_id)}) — spesa registrata senza addebito trovato`)
+    );
+  }
+}
+
+function row(cls, amountText, subText) {
+  const el = document.createElement("div");
+  el.className = "list-item " + cls;
+  el.innerHTML = `<div class="li-main"><div class="li-sub">${subText}</div></div><div class="li-amount">${amountText}</div>`;
+  return el;
+}
+
+
+/* ===== reports.js ===== */
+
+
+const periodSelect = document.getElementById("report-period");
+const monthInput = document.getElementById("report-month");
+const totalEl = document.getElementById("report-total");
+const diffEl = document.getElementById("report-diff");
+
+let chartCategory, chartTrend, chartPayment;
+
+function initReportsView() {
+  if (!monthInput.value) monthInput.value = new Date().toISOString().slice(0, 7);
+  renderReports();
+}
+
+periodSelect.addEventListener("change", renderReports);
+monthInput.addEventListener("change", renderReports);
+
+function monthBounds(yyyyMm) {
+  const [y, m] = yyyyMm.split("-").map(Number);
+  const start = `${yyyyMm}-01`;
+  const lastDay = new Date(y, m, 0).getDate();
+  const end = `${yyyyMm}-${String(lastDay).padStart(2, "0")}`;
+  return { start, end, year: y, month: m };
+}
+
+function shiftMonth(yyyyMm, delta) {
+  const [y, m] = yyyyMm.split("-").map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+async function fetchExpenses(start, end) {
+  const { data, error } = await sb
+    .from("expenses")
+    .select("*")
+    .eq("user_id", state.userId)
+    .gte("expense_date", start)
+    .lte("expense_date", end);
+  if (error) {
+    console.error(error);
+    return [];
+  }
+  return data;
+}
+
+function sum(list) {
+  return list.reduce((s, e) => s + Number(e.amount), 0);
+}
+
+function isoWeekLabel(dateStr) {
+  const d = new Date(dateStr);
+  const target = new Date(d.valueOf());
+  const dayNr = (d.getDay() + 6) % 7;
+  target.setDate(target.getDate() - dayNr + 3);
+  const firstThursday = new Date(target.getFullYear(), 0, 4);
+  const weekNumber = 1 + Math.round(((target - firstThursday) / 86400000 - 3 + ((firstThursday.getDay() + 6) % 7)) / 7);
+  return `Sett. ${weekNumber}`;
+}
+
+async function renderReports() {
+  const period = periodSelect.value;
+  const refMonth = monthInput.value;
+  if (!refMonth) return;
+
+  const { start, end, year } = monthBounds(refMonth);
+
+  let currentStart = start, currentEnd = end, prevStart, prevEnd;
+  if (period === "year") {
+    currentStart = `${year}-01-01`;
+    currentEnd = `${year}-12-31`;
+    prevStart = `${year - 1}-01-01`;
+    prevEnd = `${year - 1}-12-31`;
+  } else {
+    const prevMonth = shiftMonth(refMonth, -1);
+    const prevBounds = monthBounds(prevMonth);
+    prevStart = prevBounds.start;
+    prevEnd = prevBounds.end;
+  }
+
+  const [current, previous] = await Promise.all([
+    fetchExpenses(currentStart, currentEnd),
+    fetchExpenses(prevStart, prevEnd),
+  ]);
+
+  const totalCurrent = sum(current);
+  const totalPrevious = sum(previous);
+  totalEl.textContent = `€ ${totalCurrent.toFixed(2)}`;
+
+  if (totalPrevious > 0) {
+    const diffPct = ((totalCurrent - totalPrevious) / totalPrevious) * 100;
+    const sign = diffPct >= 0 ? "+" : "";
+    diffEl.textContent = `${sign}${diffPct.toFixed(0)}%`;
+  } else {
+    diffEl.textContent = "n/d";
+  }
+
+  renderCategoryChart(current);
+  renderPaymentChart(current);
+  renderTrendChart(current, period, refMonth, year);
+}
+
+function renderCategoryChart(expenses) {
+  const totals = {};
+  for (const e of expenses) {
+    const name = categoryName(e.category_id);
+    totals[name] = (totals[name] || 0) + Number(e.amount);
+  }
+  const labels = Object.keys(totals);
+  const data = Object.values(totals);
+
+  if (chartCategory) chartCategory.destroy();
+  chartCategory = new Chart(document.getElementById("chart-category"), {
+    type: "pie",
+    data: { labels, datasets: [{ data }] },
+    options: { responsive: true, plugins: { legend: { position: "bottom" } } },
+  });
+}
+
+function renderPaymentChart(expenses) {
+  const totals = {};
+  for (const e of expenses) {
+    const name = paymentName(e.payment_method_id);
+    totals[name] = (totals[name] || 0) + Number(e.amount);
+  }
+  const labels = Object.keys(totals);
+  const data = Object.values(totals);
+
+  if (chartPayment) chartPayment.destroy();
+  chartPayment = new Chart(document.getElementById("chart-payment"), {
+    type: "bar",
+    data: { labels, datasets: [{ label: "€", data }] },
+    options: { responsive: true, plugins: { legend: { display: false } } },
+  });
+}
+
+function renderTrendChart(expenses, period, refMonth, year) {
+  const totals = {};
+  const order = [];
+
+  if (period === "year") {
+    for (let m = 1; m <= 12; m++) {
+      const label = new Date(year, m - 1, 1).toLocaleDateString("it-IT", { month: "short" });
+      totals[label] = 0;
+      order.push(label);
+    }
+    for (const e of expenses) {
+      const m = new Date(e.expense_date).getMonth();
+      const label = order[m];
+      totals[label] += Number(e.amount);
+    }
+  } else if (period === "week") {
+    for (const e of expenses) {
+      const label = isoWeekLabel(e.expense_date);
+      if (!(label in totals)) order.push(label);
+      totals[label] = (totals[label] || 0) + Number(e.amount);
+    }
+    order.sort((a, b) => parseInt(a.replace(/\D/g, "")) - parseInt(b.replace(/\D/g, "")));
+  } else {
+    // giorno per giorno nel mese selezionato
+    const { year: y, month: m } = monthBounds(refMonth);
+    const lastDay = new Date(y, m, 0).getDate();
+    for (let d = 1; d <= lastDay; d++) {
+      order.push(String(d));
+      totals[String(d)] = 0;
+    }
+    for (const e of expenses) {
+      const d = new Date(e.expense_date).getDate();
+      totals[String(d)] += Number(e.amount);
+    }
+  }
+
+  const labels = order;
+  const data = order.map((l) => Math.round(totals[l] * 100) / 100);
+
+  if (chartTrend) chartTrend.destroy();
+  chartTrend = new Chart(document.getElementById("chart-trend"), {
+    type: period === "month" ? "line" : "bar",
+    data: { labels, datasets: [{ label: "€ spesi", data, fill: false, tension: 0.25 }] },
+    options: { responsive: true, plugins: { legend: { display: false } } },
+  });
+}
+
+
+/* ===== main.js ===== */
+
+
+
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Spese" />
+<title>Le Mie Spese</title>
+<style>
+:root {
+  --bg: #f4f5f7;
+  --card-bg: #ffffff;
+  --text: #1c1e21;
+  --muted: #6b7280;
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --danger: #dc2626;
+  --ok: #16a34a;
+  --warn: #d97706;
+  --border: #e5e7eb;
+  --radius: 12px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+h1 { font-size: 1.25rem; margin: 0; }
+h2 { font-size: 1.1rem; margin: 0 0 8px; }
+h3 { font-size: 0.95rem; margin: 20px 0 8px; color: var(--muted); }
+.muted { color: var(--muted); font-size: 0.9rem; }
+
+/* ---- Login ---- */
+#auth-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.auth-box {
+  background: var(--card-bg);
+  padding: 28px 22px;
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 360px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+.auth-box h1 { text-align: center; margin-bottom: 4px; }
+.auth-box p.muted { text-align: center; margin-bottom: 20px; }
+
+/* ---- Layout app ---- */
+#app { display: flex; flex-direction: column; min-height: 100vh; }
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding-top: max(14px, env(safe-area-inset-top));
+}
+#views {
+  flex: 1;
+  padding: 16px;
+  padding-bottom: 90px;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+}
+.view { animation: fadein .15s ease-in; }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---- Tabbar ---- */
+.tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  background: var(--card-bg);
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 10;
+}
+.tab-btn {
+  flex: 1;
+  border: none;
+  background: none;
+  padding: 10px 4px 8px;
+  font-size: 1.2rem;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.tab-btn span { font-size: 0.65rem; }
+.tab-btn.active { color: var(--primary); }
+
+/* ---- Form elements ---- */
+label {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: 12px 0 4px;
+}
+input[type=text], input[type=email], input[type=password], input[type=number],
+input[type=date], input[type=month], input[type=file], select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  background: var(--card-bg);
+  color: var(--text);
+}
+textarea { resize: vertical; font-family: inherit; }
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+}
+.btn.primary { background: var(--primary); color: white; }
+.btn.primary:active { background: var(--primary-dark); }
+.btn.ghost { background: transparent; color: var(--primary); border: 1px solid var(--border); }
+.btn.link { background: none; color: var(--primary); font-weight: 500; padding: 8px; width: 100%; }
+.btn.small { padding: 8px 12px; font-size: 0.85rem; background: var(--primary); color: white; }
+.btn.danger-outline { background: none; color: var(--danger); border: 1px solid var(--danger); padding: 6px 10px; font-size: 0.8rem; }
+.btn.full { width: 100%; }
+
+.message { font-size: 0.85rem; margin-top: 10px; min-height: 1em; }
+.message.error { color: var(--danger); }
+.message.success { color: var(--ok); }
+
+hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+/* ---- Liste ---- */
+.list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.list-item {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+}
+.list-item .li-main { flex: 1; min-width: 0; }
+.list-item .li-title { font-weight: 600; font-size: 0.95rem; }
+.list-item .li-sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+.list-item .li-amount { font-weight: 700; white-space: nowrap; }
+.list-item.status-matched { border-left: 4px solid var(--ok); }
+.list-item.status-discrepancy { border-left: 4px solid var(--warn); }
+
+.filters { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.filters > * { flex: 1; min-width: 110px; }
+
+.total-badge {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.summary-cards { display: flex; gap: 8px; margin: 10px 0; }
+.card {
+  flex: 1;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  text-align: center;
+}
+.card span { display: block; font-size: 1.2rem; font-weight: 700; }
+.card small { color: var(--muted); font-size: 0.72rem; }
+.card.ok span { color: var(--ok); }
+.card.warn span { color: var(--warn); }
+
+.add-row { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+.add-row input[type=text] { flex: 1; min-width: 140px; }
+.checkbox-inline { display: flex; align-items: center; gap: 4px; font-size: 0.82rem; color: var(--muted); }
+.checkbox-inline input { width: auto; }
+
+canvas { margin: 6px 0 20px; }
+
+</style>
+<!-- Supabase client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<!-- CSV parsing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<!-- Excel parsing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- Grafici -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ============ SCHERMATA LOGIN ============ -->
+<div id="auth-screen" class="screen">
+  <div class="auth-box">
+    <h1>💶 Le Mie Spese</h1>
+    <p class="muted">Accedi per continuare</p>
+    <form id="login-form">
+      <label>Email</label>
+      <input type="email" id="login-email" required autocomplete="username" />
+      <label>Password</label>
+      <input type="password" id="login-password" required autocomplete="current-password" />
+      <button type="submit" class="btn primary">Accedi</button>
+    </form>
+    <button id="show-signup" class="btn link">Non hai un account? Registrati</button>
+    <button id="show-login" class="btn link" style="display:none">Hai già un account? Accedi</button>
+    <form id="signup-form" style="display:none">
+      <label>Email</label>
+      <input type="email" id="signup-email" required autocomplete="username" />
+      <label>Password (minimo 6 caratteri)</label>
+      <input type="password" id="signup-password" required autocomplete="new-password" />
+      <button type="submit" class="btn primary">Crea account</button>
+    </form>
+    <p id="auth-message" class="message"></p>
+  </div>
+</div>
+
+<!-- ============ APP PRINCIPALE ============ -->
+<div id="app" class="screen" style="display:none">
+
+  <header class="topbar">
+    <h1>💶 Le Mie Spese</h1>
+    <button id="logout-btn" class="btn ghost small">Esci</button>
+  </header>
+
+  <main id="views">
+
+    <!-- ---- Nuova spesa ---- -->
+    <section id="view-new" class="view">
+      <h2>Nuova spesa</h2>
+      <p class="muted">Tocca il campo, poi usa il microfono della tastiera di iOS per dettare (es. "caffè al bar due euro contanti"), oppure scrivi a mano. Tocca "Interpreta" per far leggere il testo all'app.</p>
+      <textarea id="voice-input" rows="2" placeholder="Es: spesa al supermercato 42 euro e 50 con la carta"></textarea>
+      <button id="parse-btn" class="btn primary full">Interpreta</button>
+
+      <div id="expense-confirm" style="display:none">
+        <hr />
+        <label>Importo (€)</label>
+        <input type="number" step="0.01" id="f-amount" />
+
+        <label>Descrizione</label>
+        <input type="text" id="f-description" />
+
+        <label>Categoria</label>
+        <select id="f-category"></select>
+
+        <label>Metodo di pagamento</label>
+        <select id="f-payment"></select>
+
+        <label>Data</label>
+        <input type="date" id="f-date" />
+
+        <button id="save-expense-btn" class="btn primary full">Salva spesa</button>
+        <button id="cancel-expense-btn" class="btn ghost full">Annulla</button>
+      </div>
+      <p id="new-expense-message" class="message"></p>
+    </section>
+
+    <!-- ---- Elenco spese ---- -->
+    <section id="view-list" class="view" style="display:none">
+      <h2>Le tue spese</h2>
+      <div class="filters">
+        <input type="month" id="filter-month" />
+        <select id="filter-category"></select>
+        <select id="filter-payment"></select>
+      </div>
+      <div id="expenses-total" class="total-badge"></div>
+      <div id="expenses-list" class="list"></div>
+    </section>
+
+    <!-- ---- Riconciliazione ---- -->
+    <section id="view-reconcile" class="view" style="display:none">
+      <h2>Riconciliazione estratti conto</h2>
+      <p class="muted">Carica il file (CSV o Excel) esportato dalla tua banca, da Satispay o da PayPal. I contanti non vengono riconciliati.</p>
+
+      <label>Origine del file</label>
+      <select id="import-source">
+        <option>Banca</option>
+        <option>Satispay</option>
+        <option>PayPal</option>
+      </select>
+
+      <label>File estratto conto</label>
+      <input type="file" id="import-file" accept=".csv,.xlsx,.xls" />
+
+      <div id="column-mapping" style="display:none">
+        <hr />
+        <p><strong>Indica quale colonna contiene cosa:</strong></p>
+        <label>Colonna Data</label>
+        <select id="map-date"></select>
+        <label>Colonna Importo</label>
+        <select id="map-amount"></select>
+        <label>Colonna Descrizione</label>
+        <select id="map-description"></select>
+        <button id="run-reconcile-btn" class="btn primary full">Avvia riconciliazione</button>
+      </div>
+
+      <p id="reconcile-message" class="message"></p>
+
+      <div id="reconcile-results" style="display:none">
+        <hr />
+        <h3>Risultati</h3>
+        <div class="summary-cards">
+          <div class="card ok"><span id="count-matched">0</span><small>Corrispondenti</small></div>
+          <div class="card warn"><span id="count-unmatched-bank">0</span><small>Addebiti senza spesa</small></div>
+          <div class="card warn"><span id="count-unmatched-expense">0</span><small>Spese senza addebito</small></div>
+        </div>
+        <div id="reconcile-list" class="list"></div>
+      </div>
+    </section>
+
+    <!-- ---- Report ---- -->
+    <section id="view-reports" class="view" style="display:none">
+      <h2>Report</h2>
+      <div class="filters">
+        <select id="report-period">
+          <option value="week">Settimana</option>
+          <option value="month" selected>Mese</option>
+          <option value="year">Anno</option>
+        </select>
+        <input type="month" id="report-month" />
+      </div>
+
+      <div class="summary-cards">
+        <div class="card"><span id="report-total">€0</span><small>Totale periodo</small></div>
+        <div class="card"><span id="report-diff">-</span><small>Vs periodo precedente</small></div>
+      </div>
+
+      <h3>Per categoria</h3>
+      <canvas id="chart-category" height="220"></canvas>
+
+      <h3>Andamento nel tempo</h3>
+      <canvas id="chart-trend" height="220"></canvas>
+
+      <h3>Per metodo di pagamento</h3>
+      <canvas id="chart-payment" height="220"></canvas>
+    </section>
+
+    <!-- ---- Impostazioni ---- -->
+    <section id="view-settings" class="view" style="display:none">
+      <h2>Impostazioni</h2>
+      <h3>Categorie</h3>
+      <div id="categories-list" class="list"></div>
+      <div class="add-row">
+        <input type="text" id="new-category-name" placeholder="Nuova categoria" />
+        <button id="add-category-btn" class="btn small">Aggiungi</button>
+      </div>
+
+      <h3>Metodi di pagamento</h3>
+      <div id="payments-list" class="list"></div>
+      <div class="add-row">
+        <input type="text" id="new-payment-name" placeholder="Nuovo metodo" />
+        <label class="checkbox-inline"><input type="checkbox" id="new-payment-reconcilable" checked /> Riconciliabile</label>
+        <button id="add-payment-btn" class="btn small">Aggiungi</button>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-view="view-new">➕<span>Nuova</span></button>
+    <button class="tab-btn" data-view="view-list">📋<span>Spese</span></button>
+    <button class="tab-btn" data-view="view-reconcile">🔄<span>Verifica</span></button>
+    <button class="tab-btn" data-view="view-reports">📊<span>Report</span></button>
+    <button class="tab-btn" data-view="view-settings">⚙️<span>Impostazioni</span></button>
+  </nav>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ===== config.js ===== */
+// ============================================================
+// CONFIGURAZIONE — progetto Supabase "Le mie spese"
+// Questi valori sono già compilati e pronti all'uso.
+// (La publishable key è pensata per essere pubblica: l'accesso
+//  ai dati è protetto dal login e dalle regole RLS del database.)
+// ============================================================
+const SUPABASE_URL = "https://vtkawdyochpjampfufne.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_3QFz97phvuNtMnfPd6E4RQ_8_JkDnaz";
+
+
+/* ===== supabaseClient.js ===== */
+
+// La libreria Supabase è caricata da CDN in index.html e crea l'oggetto globale `supabase`.
+// Qui creiamo il client vero e proprio che useremo in tutta l'app.
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+
+/* ===== store.js ===== */
+
+// Cache in memoria di categorie e metodi di pagamento dell'utente corrente,
+// così non li richiediamo al database ad ogni cambio di schermata.
+const state = {
+  userId: null,
+  categories: [],
+  paymentMethods: [],
+};
+
+async function loadLookups(userId) {
+  state.userId = userId;
+  const [{ data: cats, error: catErr }, { data: pays, error: payErr }] = await Promise.all([
+    sb.from("categories").select("*").eq("user_id", userId).order("sort_order"),
+    sb.from("payment_methods").select("*").eq("user_id", userId).order("sort_order"),
+  ]);
+  if (catErr) console.error(catErr);
+  if (payErr) console.error(payErr);
+  state.categories = cats || [];
+  state.paymentMethods = pays || [];
+}
+
+function categoryName(id) {
+  return state.categories.find((c) => c.id === id)?.name || "—";
+}
+
+function paymentName(id) {
+  return state.paymentMethods.find((p) => p.id === id)?.name || "—";
+}
+
+function isReconcilable(paymentId) {
+  return !!state.paymentMethods.find((p) => p.id === paymentId)?.reconcilable;
+}
+
+async function addCategory(name) {
+  const sort_order = state.categories.length + 1;
+  const { data, error } = await sb
+    .from("categories")
+    .insert({ user_id: state.userId, name, sort_order })
+    .select()
+    .single();
+  if (error) throw error;
+  state.categories.push(data);
+  return data;
+}
+
+async function deleteCategory(id) {
+  const { error } = await sb.from("categories").delete().eq("id", id);
+  if (error) throw error;
+  state.categories = state.categories.filter((c) => c.id !== id);
+}
+
+async function addPaymentMethod(name, reconcilable) {
+  const sort_order = state.paymentMethods.length + 1;
+  const { data, error } = await sb
+    .from("payment_methods")
+    .insert({ user_id: state.userId, name, reconcilable, sort_order })
+    .select()
+    .single();
+  if (error) throw error;
+  state.paymentMethods.push(data);
+  return data;
+}
+
+async function deletePaymentMethod(id) {
+  const { error } = await sb.from("payment_methods").delete().eq("id", id);
+  if (error) throw error;
+  state.paymentMethods = state.paymentMethods.filter((p) => p.id !== id);
+}
+
+// ---- helper per riempire i menu a tendina nella UI ----
+function fillSelect(selectEl, items, { includeAll = false, allLabel = "Tutte" } = {}) {
+  selectEl.innerHTML = "";
+  if (includeAll) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = allLabel;
+    selectEl.appendChild(opt);
+  }
+  for (const item of items) {
+    const opt = document.createElement("option");
+    opt.value = item.id;
+    opt.textContent = item.name;
+    selectEl.appendChild(opt);
+  }
+}
+
+
+/* ===== parser.js ===== */
+// ============================================================
+// Interpretazione del testo dettato/scritto per estrarre
+// importo, categoria, metodo di pagamento e data.
+// Tutto gira in locale nel telefono, nessun servizio esterno.
+// ============================================================
+
+// Numeri scritti in lettere (l'iOS a volte non li converte tutti in cifre)
+const WORD_NUMBERS = {
+  "zero": 0, "un": 1, "uno": 1, "una": 1, "due": 2, "tre": 3, "quattro": 4,
+  "cinque": 5, "sei": 6, "sette": 7, "otto": 8, "nove": 9, "dieci": 10,
+  "undici": 11, "dodici": 12, "tredici": 13, "quattordici": 14, "quindici": 15,
+  "sedici": 16, "diciassette": 17, "diciotto": 18, "diciannove": 19, "venti": 20,
+  "trenta": 30, "quaranta": 40, "cinquanta": 50, "sessanta": 60,
+  "settanta": 70, "ottanta": 80, "novanta": 90, "cento": 100
+};
+
+// Parole chiave -> nome categoria di default (usate come fallback se il
+// testo non contiene già il nome esatto di una categoria dell'utente)
+const CATEGORY_KEYWORDS = {
+  "Bar": ["bar", "caffè", "caffe", "cappuccino", "cornetto", "brioche", "aperitivo"],
+  "Spesa": ["spesa", "supermercato", "super mercato", "alimentari", "esselunga", "conad", "coop", "carrefour", "lidl"],
+  "Carburante": ["benzina", "carburante", "diesel", "gasolio", "distributore", "rifornimento"],
+  "Ristorante": ["ristorante", "pizzeria", "trattoria", "cena fuori", "pranzo fuori", "sushi", "kebab"],
+  "Trasporti": ["treno", "autobus", "bus", "metro", "metropolitana", "taxi", "parcheggio", "autostrada", "pedaggio", "biglietto"],
+  "Salute": ["farmacia", "medico", "dottore", "dentista", "visita medica", "parafarmacia"],
+  "Casa": ["affitto", "bolletta", "bollette", "condominio", "luce", "gas", "internet", "casa"],
+  "Abbigliamento": ["vestiti", "abbigliamento", "scarpe", "negozio", "zara", "h&m"],
+  "Tempo libero": ["cinema", "cinema", "concerto", "palestra", "sport", "libro", "videogioco", "netflix", "abbonamento"],
+};
+
+// Parole chiave -> nome metodo di pagamento
+const PAYMENT_KEYWORDS = {
+  "Contanti": ["contanti", "cash", "contante"],
+  "Carta di credito": ["carta di credito", "carta credito", "con la carta", "carta bancomat", "bancomat", "carta"],
+  "Satispay": ["satispay"],
+  "PayPal": ["paypal", "pay pal"],
+  "Bonifico": ["bonifico", "bonifico bancario"],
+};
+
+function normalize(text) {
+  return text.toLowerCase().trim();
+}
+
+function extractAmount(text) {
+  // Prova prima con "X euro e Y (centesimi)", perché va controllata
+  // prima del semplice "X euro" (altrimenti si fermerebbe a "X").
+  const euroECent = text.match(/(\d+)\s*euro\s*e\s*(\d+)/i);
+  if (euroECent) {
+    return parseFloat(`${euroECent[1]}.${euroECent[2].padStart(2, "0").slice(0, 2)}`);
+  }
+
+  // Cerca pattern tipo "12,50" "12.50" "12" seguiti/preceduti da euro o €
+  const patterns = [
+    /(\d+[.,]\d{1,2})\s*(?:€|euro)/i,
+    /€\s*(\d+[.,]\d{1,2})/i,
+    /(\d+)\s*(?:€|euro)/i,
+    /€\s*(\d+)/i,
+    /(\d+[.,]\d{1,2})/,
+  ];
+  for (const p of patterns) {
+    const m = text.match(p);
+    if (m) {
+      return parseFloat(m[1].replace(",", "."));
+    }
+  }
+
+  // Prova a interpretare numeri scritti in lettere prima di "euro"
+  const words = text.split(/\s+/);
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i].replace(/[^\wàèéìòù]/gi, "");
+    if (WORD_NUMBERS[w] !== undefined && /euro/i.test(words[i + 1] || "")) {
+      return WORD_NUMBERS[w];
+    }
+  }
+
+  return null;
+}
+
+function extractCategory(text, userCategories) {
+  // 1) match diretto: il testo contiene già il nome esatto di una categoria dell'utente
+  for (const cat of userCategories) {
+    if (text.includes(cat.name.toLowerCase())) return cat.id;
+  }
+  // 2) match tramite parole chiave, poi cerchiamo la categoria dell'utente con quel nome
+  for (const [catName, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+    if (keywords.some((k) => text.includes(k))) {
+      const found = userCategories.find((c) => c.name.toLowerCase() === catName.toLowerCase());
+      if (found) return found.id;
+    }
+  }
+  return null;
+}
+
+function extractPayment(text, userPayments) {
+  for (const [payName, keywords] of Object.entries(PAYMENT_KEYWORDS)) {
+    if (keywords.some((k) => text.includes(k))) {
+      const found = userPayments.find((p) => p.name.toLowerCase() === payName.toLowerCase());
+      if (found) return found.id;
+    }
+  }
+  return null;
+}
+
+function extractDate(text) {
+  const today = new Date();
+  if (/\bieri\b/.test(text)) {
+    today.setDate(today.getDate() - 1);
+  } else if (/l['\s]?altro\s*ieri/.test(text)) {
+    today.setDate(today.getDate() - 2);
+  }
+  return today.toISOString().slice(0, 10);
+}
+
+function buildDescription(text, amount) {
+  let desc = text;
+  // rimuove per prima cosa il pattern "X euro e Y" (es. "42 euro e 50")
+  desc = desc.replace(/\d+\s*euro\s*e\s*\d+/gi, " ");
+  // rimuove l'importo e la parola euro/€ dal testo per lasciare solo la descrizione
+  desc = desc.replace(/(\d+[.,]?\d*)\s*(?:€|euro)?/gi, " ");
+  desc = desc.replace(/€/g, " ");
+  // rimuove le parole chiave di metodo pagamento più comuni
+  for (const keywords of Object.values(PAYMENT_KEYWORDS)) {
+    for (const k of keywords) {
+      desc = desc.replace(new RegExp(k, "gi"), " ");
+    }
+  }
+  desc = desc.replace(/\bcon\s+la\b|\bcon\b|\be\s+centesimi\b|\bieri\b|\boggi\b/gi, " ");
+  desc = desc.replace(/\s+/g, " ").trim();
+  if (!desc) desc = text.trim();
+  // capitalizza la prima lettera
+  return desc.charAt(0).toUpperCase() + desc.slice(1);
+}
+
+/**
+ * Interpreta il testo dettato e restituisce i campi individuati.
+ * Ogni campo può essere null se non è stato riconosciuto: la UI
+ * chiederà comunque conferma/completamento all'utente prima di salvare.
+ */
+function parseExpenseText(rawText, userCategories, userPayments) {
+  const text = normalize(rawText);
+  const amount = extractAmount(text);
+  const categoryId = extractCategory(text, userCategories);
+  const paymentMethodId = extractPayment(text, userPayments);
+  const date = extractDate(text);
+  const description = buildDescription(rawText, amount);
+
+  return { amount, description, categoryId, paymentMethodId, date, rawText };
+}
+
+
+/* ===== auth.js ===== */
+
+const authScreen = document.getElementById("auth-screen");
+const appScreen = document.getElementById("app");
+const authMessage = document.getElementById("auth-message");
+
+const loginForm = document.getElementById("login-form");
+const signupForm = document.getElementById("signup-form");
+const showSignupBtn = document.getElementById("show-signup");
+const showLoginBtn = document.getElementById("show-login");
+const logoutBtn = document.getElementById("logout-btn");
+
+showSignupBtn.addEventListener("click", () => {
+  loginForm.style.display = "none";
+  showSignupBtn.style.display = "none";
+  signupForm.style.display = "block";
+  showLoginBtn.style.display = "block";
+  authMessage.textContent = "";
+});
+
+showLoginBtn.addEventListener("click", () => {
+  signupForm.style.display = "none";
+  showLoginBtn.style.display = "none";
+  loginForm.style.display = "block";
+  showSignupBtn.style.display = "block";
+  authMessage.textContent = "";
+});
+
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  authMessage.className = "message";
+  authMessage.textContent = "Accesso in corso...";
+  const email = document.getElementById("login-email").value.trim();
+  const password = document.getElementById("login-password").value;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    authMessage.className = "message error";
+    authMessage.textContent = "Errore: " + error.message;
+  }
+});
+
+signupForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  authMessage.className = "message";
+  authMessage.textContent = "Creazione account...";
+  const email = document.getElementById("signup-email").value.trim();
+  const password = document.getElementById("signup-password").value;
+  const { error } = await sb.auth.signUp({ email, password });
+  if (error) {
+    authMessage.className = "message error";
+    authMessage.textContent = "Errore: " + error.message;
+  } else {
+    authMessage.className = "message success";
+    authMessage.textContent = "Account creato! Se richiesto, controlla la mail per confermare, poi accedi.";
+  }
+});
+
+logoutBtn.addEventListener("click", async () => {
+  await sb.auth.signOut();
+});
+
+// Funzione chiamata da main.js quando l'utente è autenticato,
+// per far partire il caricamento dati dell'app
+let onAuthReadyCallback = null;
+function onAuthReady(cb) {
+  onAuthReadyCallback = cb;
+}
+
+function showApp() {
+  authScreen.style.display = "none";
+  appScreen.style.display = "flex";
+}
+
+function showAuth() {
+  appScreen.style.display = "none";
+  authScreen.style.display = "flex";
+}
+
+sb.auth.onAuthStateChange((event, session) => {
+  if (session) {
+    showApp();
+    if (onAuthReadyCallback) onAuthReadyCallback(session.user);
+  } else {
+    showAuth();
+  }
+});
+
+// Controllo iniziale (nel caso la sessione sia già salvata dal browser)
+async function checkInitialSession() {
+  const { data } = await sb.auth.getSession();
+  if (data.session) {
+    showApp();
+    if (onAuthReadyCallback) onAuthReadyCallback(data.session.user);
+  } else {
+    showAuth();
+  }
+}
+
+
+/* ===== expenses.js ===== */
+
+
+
+// ============================================================
+// VISTA "Nuova spesa"
+// ============================================================
+const voiceInput = document.getElementById("voice-input");
+const parseBtn = document.getElementById("parse-btn");
+const confirmBox = document.getElementById("expense-confirm");
+const fAmount = document.getElementById("f-amount");
+const fDescription = document.getElementById("f-description");
+const fCategory = document.getElementById("f-category");
+const fPayment = document.getElementById("f-payment");
+const fDate = document.getElementById("f-date");
+const saveBtn = document.getElementById("save-expense-btn");
+const cancelBtn = document.getElementById("cancel-expense-btn");
+const newExpenseMessage = document.getElementById("new-expense-message");
+
+let lastRawText = "";
+
+function initNewExpenseView() {
+  fillSelect(fCategory, state.categories);
+  fillSelect(fPayment, state.paymentMethods);
+}
+
+parseBtn.addEventListener("click", () => {
+  const text = voiceInput.value.trim();
+  if (!text) return;
+  lastRawText = text;
+  const parsed = parseExpenseText(text, state.categories, state.paymentMethods);
+
+  fAmount.value = parsed.amount ?? "";
+  fDescription.value = parsed.description || "";
+  fDate.value = parsed.date;
+
+  fillSelect(fCategory, state.categories);
+  if (parsed.categoryId) fCategory.value = parsed.categoryId;
+
+  fillSelect(fPayment, state.paymentMethods);
+  if (parsed.paymentMethodId) fPayment.value = parsed.paymentMethodId;
+
+  confirmBox.style.display = "block";
+  newExpenseMessage.textContent = "";
+
+  if (!parsed.amount) {
+    newExpenseMessage.className = "message error";
+    newExpenseMessage.textContent = "Non ho capito l'importo: controllalo prima di salvare.";
+  }
+});
+
+cancelBtn.addEventListener("click", () => {
+  confirmBox.style.display = "none";
+  voiceInput.value = "";
+  newExpenseMessage.textContent = "";
+});
+
+saveBtn.addEventListener("click", async () => {
+  const amount = parseFloat(fAmount.value);
+  if (!amount || amount <= 0) {
+    newExpenseMessage.className = "message error";
+    newExpenseMessage.textContent = "Inserisci un importo valido.";
+    return;
+  }
+  const paymentMethodId = fPayment.value || null;
+  const reconciliation_status = paymentMethodId && isReconcilable(paymentMethodId) ? "pending" : "na";
+
+  const { error } = await sb.from("expenses").insert({
+    user_id: state.userId,
+    amount,
+    description: fDescription.value.trim(),
+    category_id: fCategory.value || null,
+    payment_method_id: paymentMethodId,
+    expense_date: fDate.value,
+    raw_input: lastRawText,
+    reconciliation_status,
+  });
+
+  if (error) {
+    newExpenseMessage.className = "message error";
+    newExpenseMessage.textContent = "Errore nel salvataggio: " + error.message;
+    return;
+  }
+
+  newExpenseMessage.className = "message success";
+  newExpenseMessage.textContent = "Spesa salvata!";
+  confirmBox.style.display = "none";
+  voiceInput.value = "";
+  setTimeout(() => (newExpenseMessage.textContent = ""), 2500);
+});
+
+// ============================================================
+// VISTA "Elenco spese"
+// ============================================================
+const filterMonth = document.getElementById("filter-month");
+const filterCategory = document.getElementById("filter-category");
+const filterPayment = document.getElementById("filter-payment");
+const expensesList = document.getElementById("expenses-list");
+const expensesTotal = document.getElementById("expenses-total");
+
+async function initListView() {
+  fillSelect(filterCategory, state.categories, { includeAll: true, allLabel: "Tutte le categorie" });
+  fillSelect(filterPayment, state.paymentMethods, { includeAll: true, allLabel: "Tutti i metodi" });
+  if (!filterMonth.value) {
+    filterMonth.value = new Date().toISOString().slice(0, 7);
+  }
+  await refreshList();
+}
+
+filterMonth.addEventListener("change", refreshList);
+filterCategory.addEventListener("change", refreshList);
+filterPayment.addEventListener("change", refreshList);
+
+async function refreshList() {
+  let query = sb.from("expenses").select("*").eq("user_id", state.userId).order("expense_date", { ascending: false });
+
+  if (filterMonth.value) {
+    const [y, m] = filterMonth.value.split("-");
+    const start = `${y}-${m}-01`;
+    const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
+    const end = `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
+    query = query.gte("expense_date", start).lte("expense_date", end);
+  }
+  if (filterCategory.value) query = query.eq("category_id", filterCategory.value);
+  if (filterPayment.value) query = query.eq("payment_method_id", filterPayment.value);
+
+  const { data, error } = await query;
+  if (error) {
+    expensesList.innerHTML = `<p class="message error">Errore: ${error.message}</p>`;
+    return;
+  }
+
+  const total = data.reduce((sum, e) => sum + Number(e.amount), 0);
+  expensesTotal.textContent = `Totale: € ${total.toFixed(2)} (${data.length} spese)`;
+
+  expensesList.innerHTML = "";
+  if (data.length === 0) {
+    expensesList.innerHTML = `<p class="muted">Nessuna spesa trovata per questo filtro.</p>`;
+    return;
+  }
+
+  for (const exp of data) {
+    const item = document.createElement("div");
+    item.className = "list-item";
+    const statusLabel = {
+      na: "",
+      pending: "Da verificare",
+      matched: "✅ Verificata",
+      discrepancy: "⚠️ Discrepanza",
+    }[exp.reconciliation_status] || "";
+
+    item.innerHTML = `
+      <div class="li-main">
+        <div class="li-title">${exp.description || categoryName(exp.category_id)}</div>
+        <div class="li-sub">${exp.expense_date} · ${categoryName(exp.category_id)} · ${paymentName(exp.payment_method_id)} ${statusLabel ? "· " + statusLabel : ""}</div>
+      </div>
+      <div class="li-amount">€ ${Number(exp.amount).toFixed(2)}</div>
+      <button class="btn danger-outline" data-id="${exp.id}">Elimina</button>
+    `;
+    item.querySelector("button").addEventListener("click", async () => {
+      if (!confirm("Eliminare questa spesa?")) return;
+      const { error: delErr } = await sb.from("expenses").delete().eq("id", exp.id);
+      if (delErr) alert("Errore: " + delErr.message);
+      else refreshList();
+    });
+    expensesList.appendChild(item);
+  }
+}
+
+
+
+/* ===== settings.js ===== */
+
+
+const categoriesList = document.getElementById("categories-list");
+const paymentsList = document.getElementById("payments-list");
+const newCategoryName = document.getElementById("new-category-name");
+const addCategoryBtn = document.getElementById("add-category-btn");
+const newPaymentName = document.getElementById("new-payment-name");
+const newPaymentReconcilable = document.getElementById("new-payment-reconcilable");
+const addPaymentBtn = document.getElementById("add-payment-btn");
+
+function initSettingsView() {
+  renderCategories();
+  renderPayments();
+}
+
+function renderCategories() {
+  categoriesList.innerHTML = "";
+  for (const cat of state.categories) {
+    const row = document.createElement("div");
+    row.className = "list-item";
+    row.innerHTML = `<div class="li-main"><div class="li-title">${cat.name}</div></div>
+      <button class="btn danger-outline" data-id="${cat.id}">Elimina</button>`;
+    row.querySelector("button").addEventListener("click", async () => {
+      if (!confirm(`Eliminare la categoria "${cat.name}"? Le spese già registrate la manterranno come testo, ma non sarà più selezionabile.`)) return;
+      try {
+        await deleteCategory(cat.id);
+        renderCategories();
+      } catch (e) {
+        alert("Errore: " + e.message);
+      }
+    });
+    categoriesList.appendChild(row);
+  }
+}
+
+function renderPayments() {
+  paymentsList.innerHTML = "";
+  for (const pay of state.paymentMethods) {
+    const row = document.createElement("div");
+    row.className = "list-item";
+    row.innerHTML = `<div class="li-main"><div class="li-title">${pay.name}</div>
+      <div class="li-sub">${pay.reconcilable ? "Riconciliabile con estratto conto" : "Non riconciliabile (es. contanti)"}</div></div>
+      <button class="btn danger-outline" data-id="${pay.id}">Elimina</button>`;
+    row.querySelector("button").addEventListener("click", async () => {
+      if (!confirm(`Eliminare il metodo "${pay.name}"?`)) return;
+      try {
+        await deletePaymentMethod(pay.id);
+        renderPayments();
+      } catch (e) {
+        alert("Errore: " + e.message);
+      }
+    });
+    paymentsList.appendChild(row);
+  }
+}
+
+addCategoryBtn.addEventListener("click", async () => {
+  const name = newCategoryName.value.trim();
+  if (!name) return;
+  try {
+    await addCategory(name);
+    newCategoryName.value = "";
+    renderCategories();
+  } catch (e) {
+    alert("Errore: " + e.message);
+  }
+});
+
+addPaymentBtn.addEventListener("click", async () => {
+  const name = newPaymentName.value.trim();
+  if (!name) return;
+  try {
+    await addPaymentMethod(name, newPaymentReconcilable.checked);
+    newPaymentName.value = "";
+    renderPayments();
+  } catch (e) {
+    alert("Errore: " + e.message);
+  }
+});
+
+
+/* ===== reconciliation.js ===== */
+
+
+const sourceSelect = document.getElementById("import-source");
+const fileInput = document.getElementById("import-file");
+const mappingBox = document.getElementById("column-mapping");
+const mapDate = document.getElementById("map-date");
+const mapAmount = document.getElementById("map-amount");
+const mapDescription = document.getElementById("map-description");
+const runBtn = document.getElementById("run-reconcile-btn");
+const message = document.getElementById("reconcile-message");
+const resultsBox = document.getElementById("reconcile-results");
+const countMatched = document.getElementById("count-matched");
+const countUnmatchedBank = document.getElementById("count-unmatched-bank");
+const countUnmatchedExpense = document.getElementById("count-unmatched-expense");
+const reconcileList = document.getElementById("reconcile-list");
+
+let parsedRows = []; // array di oggetti { header: valore }
+let headers = [];
+
+function initReconcileView() {
+  fileInput.value = "";
+  mappingBox.style.display = "none";
+  resultsBox.style.display = "none";
+  message.textContent = "";
+}
+
+fileInput.addEventListener("change", async () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+  message.textContent = "Lettura file...";
+  try {
+    if (file.name.toLowerCase().endsWith(".csv")) {
+      await readCsv(file);
+    } else {
+      await readExcel(file);
+    }
+    if (parsedRows.length === 0) {
+      message.className = "message error";
+      message.textContent = "Il file non contiene righe leggibili.";
+      return;
+    }
+    headers = Object.keys(parsedRows[0]);
+    populateMappingSelects();
+    mappingBox.style.display = "block";
+    message.className = "message success";
+    message.textContent = `Letto file con ${parsedRows.length} righe. Controlla la corrispondenza delle colonne qui sotto.`;
+  } catch (e) {
+    message.className = "message error";
+    message.textContent = "Errore nella lettura del file: " + e.message;
+  }
+});
+
+function readCsv(file) {
+  return new Promise((resolve, reject) => {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (res) => {
+        parsedRows = res.data;
+        resolve();
+      },
+      error: reject,
+    });
+  });
+}
+
+async function readExcel(file) {
+  const buffer = await file.arrayBuffer();
+  const wb = XLSX.read(buffer, { type: "array" });
+  const firstSheet = wb.Sheets[wb.SheetNames[0]];
+  parsedRows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+}
+
+function populateMappingSelects() {
+  for (const sel of [mapDate, mapAmount, mapDescription]) {
+    sel.innerHTML = "";
+    for (const h of headers) {
+      const opt = document.createElement("option");
+      opt.value = h;
+      opt.textContent = h;
+      sel.appendChild(opt);
+    }
+  }
+  // prova a indovinare la colonna giusta guardando il nome dell'intestazione
+  guessColumn(mapDate, ["data", "date", "data valuta", "data contabile"]);
+  guessColumn(mapAmount, ["importo", "amount", "valore", "dare", "avere"]);
+  guessColumn(mapDescription, ["descrizione", "causale", "description", "dettaglio", "note"]);
+}
+
+function guessColumn(selectEl, candidates) {
+  const lowerHeaders = headers.map((h) => h.toLowerCase());
+  for (const c of candidates) {
+    const idx = lowerHeaders.findIndex((h) => h.includes(c));
+    if (idx >= 0) {
+      selectEl.value = headers[idx];
+      return;
+    }
+  }
+}
+
+function parseDateFlexible(value) {
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  const str = String(value).trim();
+  // formati comuni: 31/01/2026, 31-01-2026, 2026-01-31
+  let m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) {
+    const [, d, mo, y] = m;
+    return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  m = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if (m) {
+    const [, y, mo, d] = m;
+    return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  const d = new Date(str);
+  if (!isNaN(d)) return d.toISOString().slice(0, 10);
+  return null;
+}
+
+function parseAmountFlexible(value) {
+  if (typeof value === "number") return value;
+  let str = String(value).trim().replace(/[€\s]/g, "");
+  // formato italiano 1.234,56 -> 1234.56
+  if (/,\d{1,2}$/.test(str)) {
+    str = str.replace(/\./g, "").replace(",", ".");
+  }
+  const num = parseFloat(str);
+  return isNaN(num) ? null : num;
+}
+
+runBtn.addEventListener("click", async () => {
+  message.className = "message";
+  message.textContent = "Riconciliazione in corso...";
+
+  const source = sourceSelect.value;
+  const rows = parsedRows
+    .map((r) => ({
+      date: parseDateFlexible(r[mapDate.value]),
+      amount: parseAmountFlexible(r[mapAmount.value]),
+      description: String(r[mapDescription.value] || ""),
+    }))
+    .filter((r) => r.date && r.amount !== null && r.amount !== 0);
+
+  if (rows.length === 0) {
+    message.className = "message error";
+    message.textContent = "Nessuna riga valida trovata: controlla la corrispondenza delle colonne.";
+    return;
+  }
+
+  // 1) crea il record di import
+  const { data: importRow, error: importErr } = await sb
+    .from("statement_imports")
+    .insert({ user_id: state.userId, source, file_name: fileInput.files[0]?.name })
+    .select()
+    .single();
+  if (importErr) {
+    message.className = "message error";
+    message.textContent = "Errore: " + importErr.message;
+    return;
+  }
+
+  // 2) inserisce i movimenti
+  const txToInsert = rows.map((r) => ({
+    user_id: state.userId,
+    import_id: importRow.id,
+    amount: r.amount,
+    transaction_date: r.date,
+    description: r.description,
+    source,
+  }));
+  const { data: insertedTx, error: txErr } = await sb.from("bank_transactions").insert(txToInsert).select();
+  if (txErr) {
+    message.className = "message error";
+    message.textContent = "Errore nel salvataggio dei movimenti: " + txErr.message;
+    return;
+  }
+
+  // 3) prende le spese "pending" (riconciliabili, non ancora verificate)
+  const { data: pendingExpenses, error: expErr } = await sb
+    .from("expenses")
+    .select("*")
+    .eq("user_id", state.userId)
+    .eq("reconciliation_status", "pending");
+  if (expErr) {
+    message.className = "message error";
+    message.textContent = "Errore nel caricamento delle spese: " + expErr.message;
+    return;
+  }
+
+  const { matches, unmatchedTx, unmatchedExpenses } = matchTransactions(insertedTx, pendingExpenses);
+
+  // 4) applica gli aggiornamenti al database
+  for (const { tx, expense } of matches) {
+    await sb.from("bank_transactions").update({ status: "matched", matched_expense_id: expense.id }).eq("id", tx.id);
+    await sb.from("expenses").update({ reconciliation_status: "matched", matched_transaction_id: tx.id }).eq("id", expense.id);
+  }
+  if (unmatchedExpenses.length > 0) {
+    await sb.from("expenses").update({ reconciliation_status: "discrepancy" }).in("id", unmatchedExpenses.map((e) => e.id));
+  }
+
+  message.className = "message success";
+  message.textContent = `Riconciliazione completata: ${matches.length} corrispondenze trovate.`;
+  renderResults(matches, unmatchedTx, unmatchedExpenses);
+});
+
+// Matching per importo (uguale, tolleranza 1 centesimo) e data
+// (entro 3 giorni, per coprire i tempi di addebito di carte/bonifici).
+// Ogni movimento bancario può abbinarsi a una sola spesa.
+function matchTransactions(bankTxs, expenses) {
+  const availableExpenses = [...expenses];
+  const matches = [];
+  const unmatchedTx = [];
+
+  for (const tx of bankTxs) {
+    const txAmount = Math.abs(tx.amount);
+    const txDate = new Date(tx.transaction_date);
+
+    let bestIdx = -1;
+    let bestDiffDays = Infinity;
+    availableExpenses.forEach((exp, idx) => {
+      const amountMatches = Math.abs(Number(exp.amount) - txAmount) < 0.01;
+      if (!amountMatches) return;
+      const expDate = new Date(exp.expense_date);
+      const diffDays = Math.abs((txDate - expDate) / 86400000);
+      if (diffDays <= 3 && diffDays < bestDiffDays) {
+        bestDiffDays = diffDays;
+        bestIdx = idx;
+      }
+    });
+
+    if (bestIdx >= 0) {
+      const [expense] = availableExpenses.splice(bestIdx, 1);
+      matches.push({ tx, expense });
+    } else {
+      unmatchedTx.push(tx);
+    }
+  }
+
+  return { matches, unmatchedTx, unmatchedExpenses: availableExpenses };
+}
+
+function renderResults(matches, unmatchedTx, unmatchedExpenses) {
+  resultsBox.style.display = "block";
+  countMatched.textContent = matches.length;
+  countUnmatchedBank.textContent = unmatchedTx.length;
+  countUnmatchedExpense.textContent = unmatchedExpenses.length;
+
+  reconcileList.innerHTML = "";
+
+  for (const { tx, expense } of matches) {
+    reconcileList.appendChild(
+      row("status-matched", `✅ € ${Math.abs(tx.amount).toFixed(2)}`, `${tx.transaction_date} · ${tx.description || "movimento"} ↔ spesa "${expense.description || categoryName(expense.category_id)}"`)
+    );
+  }
+  for (const tx of unmatchedTx) {
+    reconcileList.appendChild(
+      row("status-discrepancy", `⚠️ € ${Math.abs(tx.amount).toFixed(2)}`, `${tx.transaction_date} · ${tx.description || "movimento"} — addebito senza spesa registrata corrispondente`)
+    );
+  }
+  for (const exp of unmatchedExpenses) {
+    reconcileList.appendChild(
+      row("status-discrepancy", `⚠️ € ${Number(exp.amount).toFixed(2)}`, `${exp.expense_date} · ${exp.description || categoryName(exp.category_id)} (${paymentName(exp.payment_method_id)}) — spesa registrata senza addebito trovato`)
+    );
+  }
+}
+
+function row(cls, amountText, subText) {
+  const el = document.createElement("div");
+  el.className = "list-item " + cls;
+  el.innerHTML = `<div class="li-main"><div class="li-sub">${subText}</div></div><div class="li-amount">${amountText}</div>`;
+  return el;
+}
+
+
+/* ===== reports.js ===== */
+
+
+const periodSelect = document.getElementById("report-period");
+const monthInput = document.getElementById("report-month");
+const totalEl = document.getElementById("report-total");
+const diffEl = document.getElementById("report-diff");
+
+let chartCategory, chartTrend, chartPayment;
+
+function initReportsView() {
+  if (!monthInput.value) monthInput.value = new Date().toISOString().slice(0, 7);
+  renderReports();
+}
+
+periodSelect.addEventListener("change", renderReports);
+monthInput.addEventListener("change", renderReports);
+
+function monthBounds(yyyyMm) {
+  const [y, m] = yyyyMm.split("-").map(Number);
+  const start = `${yyyyMm}-01`;
+  const lastDay = new Date(y, m, 0).getDate();
+  const end = `${yyyyMm}-${String(lastDay).padStart(2, "0")}`;
+  return { start, end, year: y, month: m };
+}
+
+function shiftMonth(yyyyMm, delta) {
+  const [y, m] = yyyyMm.split("-").map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+async function fetchExpenses(start, end) {
+  const { data, error } = await sb
+    .from("expenses")
+    .select("*")
+    .eq("user_id", state.userId)
+    .gte("expense_date", start)
+    .lte("expense_date", end);
+  if (error) {
+    console.error(error);
+    return [];
+  }
+  return data;
+}
+
+function sum(list) {
+  return list.reduce((s, e) => s + Number(e.amount), 0);
+}
+
+function isoWeekLabel(dateStr) {
+  const d = new Date(dateStr);
+  const target = new Date(d.valueOf());
+  const dayNr = (d.getDay() + 6) % 7;
+  target.setDate(target.getDate() - dayNr + 3);
+  const firstThursday = new Date(target.getFullYear(), 0, 4);
+  const weekNumber = 1 + Math.round(((target - firstThursday) / 86400000 - 3 + ((firstThursday.getDay() + 6) % 7)) / 7);
+  return `Sett. ${weekNumber}`;
+}
+
+async function renderReports() {
+  const period = periodSelect.value;
+  const refMonth = monthInput.value;
+  if (!refMonth) return;
+
+  const { start, end, year } = monthBounds(refMonth);
+
+  let currentStart = start, currentEnd = end, prevStart, prevEnd;
+  if (period === "year") {
+    currentStart = `${year}-01-01`;
+    currentEnd = `${year}-12-31`;
+    prevStart = `${year - 1}-01-01`;
+    prevEnd = `${year - 1}-12-31`;
+  } else {
+    const prevMonth = shiftMonth(refMonth, -1);
+    const prevBounds = monthBounds(prevMonth);
+    prevStart = prevBounds.start;
+    prevEnd = prevBounds.end;
+  }
+
+  const [current, previous] = await Promise.all([
+    fetchExpenses(currentStart, currentEnd),
+    fetchExpenses(prevStart, prevEnd),
+  ]);
+
+  const totalCurrent = sum(current);
+  const totalPrevious = sum(previous);
+  totalEl.textContent = `€ ${totalCurrent.toFixed(2)}`;
+
+  if (totalPrevious > 0) {
+    const diffPct = ((totalCurrent - totalPrevious) / totalPrevious) * 100;
+    const sign = diffPct >= 0 ? "+" : "";
+    diffEl.textContent = `${sign}${diffPct.toFixed(0)}%`;
+  } else {
+    diffEl.textContent = "n/d";
+  }
+
+  renderCategoryChart(current);
+  renderPaymentChart(current);
+  renderTrendChart(current, period, refMonth, year);
+}
+
+function renderCategoryChart(expenses) {
+  const totals = {};
+  for (const e of expenses) {
+    const name = categoryName(e.category_id);
+    totals[name] = (totals[name] || 0) + Number(e.amount);
+  }
+  const labels = Object.keys(totals);
+  const data = Object.values(totals);
+
+  if (chartCategory) chartCategory.destroy();
+  chartCategory = new Chart(document.getElementById("chart-category"), {
+    type: "pie",
+    data: { labels, datasets: [{ data }] },
+    options: { responsive: true, plugins: { legend: { position: "bottom" } } },
+  });
+}
+
+function renderPaymentChart(expenses) {
+  const totals = {};
+  for (const e of expenses) {
+    const name = paymentName(e.payment_method_id);
+    totals[name] = (totals[name] || 0) + Number(e.amount);
+  }
+  const labels = Object.keys(totals);
+  const data = Object.values(totals);
+
+  if (chartPayment) chartPayment.destroy();
+  chartPayment = new Chart(document.getElementById("chart-payment"), {
+    type: "bar",
+    data: { labels, datasets: [{ label: "€", data }] },
+    options: { responsive: true, plugins: { legend: { display: false } } },
+  });
+}
+
+function renderTrendChart(expenses, period, refMonth, year) {
+  const totals = {};
+  const order = [];
+
+  if (period === "year") {
+    for (let m = 1; m <= 12; m++) {
+      const label = new Date(year, m - 1, 1).toLocaleDateString("it-IT", { month: "short" });
+      totals[label] = 0;
+      order.push(label);
+    }
+    for (const e of expenses) {
+      const m = new Date(e.expense_date).getMonth();
+      const label = order[m];
+      totals[label] += Number(e.amount);
+    }
+  } else if (period === "week") {
+    for (const e of expenses) {
+      const label = isoWeekLabel(e.expense_date);
+      if (!(label in totals)) order.push(label);
+      totals[label] = (totals[label] || 0) + Number(e.amount);
+    }
+    order.sort((a, b) => parseInt(a.replace(/\D/g, "")) - parseInt(b.replace(/\D/g, "")));
+  } else {
+    // giorno per giorno nel mese selezionato
+    const { year: y, month: m } = monthBounds(refMonth);
+    const lastDay = new Date(y, m, 0).getDate();
+    for (let d = 1; d <= lastDay; d++) {
+      order.push(String(d));
+      totals[String(d)] = 0;
+    }
+    for (const e of expenses) {
+      const d = new Date(e.expense_date).getDate();
+      totals[String(d)] += Number(e.amount);
+    }
+  }
+
+  const labels = order;
+  const data = order.map((l) => Math.round(totals[l] * 100) / 100);
+
+  if (chartTrend) chartTrend.destroy();
+  chartTrend = new Chart(document.getElementById("chart-trend"), {
+    type: period === "month" ? "line" : "bar",
+    data: { labels, datasets: [{ label: "€ spesi", data, fill: false, tension: 0.25 }] },
+    options: { responsive: true, plugins: { legend: { display: false } } },
+  });
+}
+
+
+/* ===== main.js ===== */
+
+
+
+
+
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="apple-mobile-web-app-capable" content="yes" />
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+<meta name="apple-mobile-web-app-title" content="Spese" />
+<title>Le Mie Spese</title>
+<style>
+:root {
+  --bg: #f4f5f7;
+  --card-bg: #ffffff;
+  --text: #1c1e21;
+  --muted: #6b7280;
+  --primary: #2563eb;
+  --primary-dark: #1d4ed8;
+  --danger: #dc2626;
+  --ok: #16a34a;
+  --warn: #d97706;
+  --border: #e5e7eb;
+  --radius: 12px;
+}
+
+* { box-sizing: border-box; }
+
+body {
+  margin: 0;
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+h1 { font-size: 1.25rem; margin: 0; }
+h2 { font-size: 1.1rem; margin: 0 0 8px; }
+h3 { font-size: 0.95rem; margin: 20px 0 8px; color: var(--muted); }
+.muted { color: var(--muted); font-size: 0.9rem; }
+
+/* ---- Login ---- */
+#auth-screen {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+.auth-box {
+  background: var(--card-bg);
+  padding: 28px 22px;
+  border-radius: var(--radius);
+  width: 100%;
+  max-width: 360px;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.06);
+}
+.auth-box h1 { text-align: center; margin-bottom: 4px; }
+.auth-box p.muted { text-align: center; margin-bottom: 20px; }
+
+/* ---- Layout app ---- */
+#app { display: flex; flex-direction: column; min-height: 100vh; }
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 14px 16px;
+  background: var(--card-bg);
+  border-bottom: 1px solid var(--border);
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  padding-top: max(14px, env(safe-area-inset-top));
+}
+#views {
+  flex: 1;
+  padding: 16px;
+  padding-bottom: 90px;
+  max-width: 640px;
+  width: 100%;
+  margin: 0 auto;
+}
+.view { animation: fadein .15s ease-in; }
+@keyframes fadein { from { opacity: 0; } to { opacity: 1; } }
+
+/* ---- Tabbar ---- */
+.tabbar {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  display: flex;
+  background: var(--card-bg);
+  border-top: 1px solid var(--border);
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 10;
+}
+.tab-btn {
+  flex: 1;
+  border: none;
+  background: none;
+  padding: 10px 4px 8px;
+  font-size: 1.2rem;
+  color: var(--muted);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+.tab-btn span { font-size: 0.65rem; }
+.tab-btn.active { color: var(--primary); }
+
+/* ---- Form elements ---- */
+label {
+  display: block;
+  font-size: 0.82rem;
+  color: var(--muted);
+  margin: 12px 0 4px;
+}
+input[type=text], input[type=email], input[type=password], input[type=number],
+input[type=date], input[type=month], input[type=file], select, textarea {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  font-size: 1rem;
+  background: var(--card-bg);
+  color: var(--text);
+}
+textarea { resize: vertical; font-family: inherit; }
+
+.btn {
+  border: none;
+  border-radius: 8px;
+  padding: 12px 16px;
+  font-size: 0.95rem;
+  font-weight: 600;
+  cursor: pointer;
+  margin-top: 10px;
+}
+.btn.primary { background: var(--primary); color: white; }
+.btn.primary:active { background: var(--primary-dark); }
+.btn.ghost { background: transparent; color: var(--primary); border: 1px solid var(--border); }
+.btn.link { background: none; color: var(--primary); font-weight: 500; padding: 8px; width: 100%; }
+.btn.small { padding: 8px 12px; font-size: 0.85rem; background: var(--primary); color: white; }
+.btn.danger-outline { background: none; color: var(--danger); border: 1px solid var(--danger); padding: 6px 10px; font-size: 0.8rem; }
+.btn.full { width: 100%; }
+
+.message { font-size: 0.85rem; margin-top: 10px; min-height: 1em; }
+.message.error { color: var(--danger); }
+.message.success { color: var(--ok); }
+
+hr { border: none; border-top: 1px solid var(--border); margin: 16px 0; }
+
+/* ---- Liste ---- */
+.list { display: flex; flex-direction: column; gap: 8px; margin-top: 10px; }
+.list-item {
+  background: var(--card-bg);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid var(--border);
+}
+.list-item .li-main { flex: 1; min-width: 0; }
+.list-item .li-title { font-weight: 600; font-size: 0.95rem; }
+.list-item .li-sub { font-size: 0.78rem; color: var(--muted); margin-top: 2px; }
+.list-item .li-amount { font-weight: 700; white-space: nowrap; }
+.list-item.status-matched { border-left: 4px solid var(--ok); }
+.list-item.status-discrepancy { border-left: 4px solid var(--warn); }
+
+.filters { display: flex; gap: 8px; margin-bottom: 10px; flex-wrap: wrap; }
+.filters > * { flex: 1; min-width: 110px; }
+
+.total-badge {
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-weight: 700;
+  margin-bottom: 6px;
+}
+
+.summary-cards { display: flex; gap: 8px; margin: 10px 0; }
+.card {
+  flex: 1;
+  background: var(--card-bg);
+  border: 1px solid var(--border);
+  border-radius: var(--radius);
+  padding: 12px;
+  text-align: center;
+}
+.card span { display: block; font-size: 1.2rem; font-weight: 700; }
+.card small { color: var(--muted); font-size: 0.72rem; }
+.card.ok span { color: var(--ok); }
+.card.warn span { color: var(--warn); }
+
+.add-row { display: flex; gap: 8px; margin-top: 10px; align-items: center; flex-wrap: wrap; }
+.add-row input[type=text] { flex: 1; min-width: 140px; }
+.checkbox-inline { display: flex; align-items: center; gap: 4px; font-size: 0.82rem; color: var(--muted); }
+.checkbox-inline input { width: auto; }
+
+canvas { margin: 6px 0 20px; }
+
+</style>
+<!-- Supabase client -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<!-- CSV parsing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<!-- Excel parsing -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<!-- Grafici -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.4/chart.umd.min.js"></script>
+</head>
+<body>
+
+<!-- ============ SCHERMATA LOGIN ============ -->
+<div id="auth-screen" class="screen">
+  <div class="auth-box">
+    <h1>💶 Le Mie Spese</h1>
+    <p class="muted">Accedi per continuare</p>
+    <form id="login-form">
+      <label>Email</label>
+      <input type="email" id="login-email" required autocomplete="username" />
+      <label>Password</label>
+      <input type="password" id="login-password" required autocomplete="current-password" />
+      <button type="submit" class="btn primary">Accedi</button>
+    </form>
+    <button id="show-signup" class="btn link">Non hai un account? Registrati</button>
+    <button id="show-login" class="btn link" style="display:none">Hai già un account? Accedi</button>
+    <form id="signup-form" style="display:none">
+      <label>Email</label>
+      <input type="email" id="signup-email" required autocomplete="username" />
+      <label>Password (minimo 6 caratteri)</label>
+      <input type="password" id="signup-password" required autocomplete="new-password" />
+      <button type="submit" class="btn primary">Crea account</button>
+    </form>
+    <p id="auth-message" class="message"></p>
+  </div>
+</div>
+
+<!-- ============ APP PRINCIPALE ============ -->
+<div id="app" class="screen" style="display:none">
+
+  <header class="topbar">
+    <h1>💶 Le Mie Spese</h1>
+    <button id="logout-btn" class="btn ghost small">Esci</button>
+  </header>
+
+  <main id="views">
+
+    <!-- ---- Nuova spesa ---- -->
+    <section id="view-new" class="view">
+      <h2>Nuova spesa</h2>
+      <p class="muted">Tocca il campo, poi usa il microfono della tastiera di iOS per dettare (es. "caffè al bar due euro contanti"), oppure scrivi a mano. Tocca "Interpreta" per far leggere il testo all'app.</p>
+      <textarea id="voice-input" rows="2" placeholder="Es: spesa al supermercato 42 euro e 50 con la carta"></textarea>
+      <button id="parse-btn" class="btn primary full">Interpreta</button>
+
+      <div id="expense-confirm" style="display:none">
+        <hr />
+        <label>Importo (€)</label>
+        <input type="number" step="0.01" id="f-amount" />
+
+        <label>Descrizione</label>
+        <input type="text" id="f-description" />
+
+        <label>Categoria</label>
+        <select id="f-category"></select>
+
+        <label>Metodo di pagamento</label>
+        <select id="f-payment"></select>
+
+        <label>Data</label>
+        <input type="date" id="f-date" />
+
+        <button id="save-expense-btn" class="btn primary full">Salva spesa</button>
+        <button id="cancel-expense-btn" class="btn ghost full">Annulla</button>
+      </div>
+      <p id="new-expense-message" class="message"></p>
+    </section>
+
+    <!-- ---- Elenco spese ---- -->
+    <section id="view-list" class="view" style="display:none">
+      <h2>Le tue spese</h2>
+      <div class="filters">
+        <input type="month" id="filter-month" />
+        <select id="filter-category"></select>
+        <select id="filter-payment"></select>
+      </div>
+      <div id="expenses-total" class="total-badge"></div>
+      <div id="expenses-list" class="list"></div>
+    </section>
+
+    <!-- ---- Riconciliazione ---- -->
+    <section id="view-reconcile" class="view" style="display:none">
+      <h2>Riconciliazione estratti conto</h2>
+      <p class="muted">Carica il file (CSV o Excel) esportato dalla tua banca, da Satispay o da PayPal. I contanti non vengono riconciliati.</p>
+
+      <label>Origine del file</label>
+      <select id="import-source">
+        <option>Banca</option>
+        <option>Satispay</option>
+        <option>PayPal</option>
+      </select>
+
+      <label>File estratto conto</label>
+      <input type="file" id="import-file" accept=".csv,.xlsx,.xls" />
+
+      <div id="column-mapping" style="display:none">
+        <hr />
+        <p><strong>Indica quale colonna contiene cosa:</strong></p>
+        <label>Colonna Data</label>
+        <select id="map-date"></select>
+        <label>Colonna Importo</label>
+        <select id="map-amount"></select>
+        <label>Colonna Descrizione</label>
+        <select id="map-description"></select>
+        <button id="run-reconcile-btn" class="btn primary full">Avvia riconciliazione</button>
+      </div>
+
+      <p id="reconcile-message" class="message"></p>
+
+      <div id="reconcile-results" style="display:none">
+        <hr />
+        <h3>Risultati</h3>
+        <div class="summary-cards">
+          <div class="card ok"><span id="count-matched">0</span><small>Corrispondenti</small></div>
+          <div class="card warn"><span id="count-unmatched-bank">0</span><small>Addebiti senza spesa</small></div>
+          <div class="card warn"><span id="count-unmatched-expense">0</span><small>Spese senza addebito</small></div>
+        </div>
+        <div id="reconcile-list" class="list"></div>
+      </div>
+    </section>
+
+    <!-- ---- Report ---- -->
+    <section id="view-reports" class="view" style="display:none">
+      <h2>Report</h2>
+      <div class="filters">
+        <select id="report-period">
+          <option value="week">Settimana</option>
+          <option value="month" selected>Mese</option>
+          <option value="year">Anno</option>
+        </select>
+        <input type="month" id="report-month" />
+      </div>
+
+      <div class="summary-cards">
+        <div class="card"><span id="report-total">€0</span><small>Totale periodo</small></div>
+        <div class="card"><span id="report-diff">-</span><small>Vs periodo precedente</small></div>
+      </div>
+
+      <h3>Per categoria</h3>
+      <canvas id="chart-category" height="220"></canvas>
+
+      <h3>Andamento nel tempo</h3>
+      <canvas id="chart-trend" height="220"></canvas>
+
+      <h3>Per metodo di pagamento</h3>
+      <canvas id="chart-payment" height="220"></canvas>
+    </section>
+
+    <!-- ---- Impostazioni ---- -->
+    <section id="view-settings" class="view" style="display:none">
+      <h2>Impostazioni</h2>
+      <h3>Categorie</h3>
+      <div id="categories-list" class="list"></div>
+      <div class="add-row">
+        <input type="text" id="new-category-name" placeholder="Nuova categoria" />
+        <button id="add-category-btn" class="btn small">Aggiungi</button>
+      </div>
+
+      <h3>Metodi di pagamento</h3>
+      <div id="payments-list" class="list"></div>
+      <div class="add-row">
+        <input type="text" id="new-payment-name" placeholder="Nuovo metodo" />
+        <label class="checkbox-inline"><input type="checkbox" id="new-payment-reconcilable" checked /> Riconciliabile</label>
+        <button id="add-payment-btn" class="btn small">Aggiungi</button>
+      </div>
+    </section>
+
+  </main>
+
+  <nav class="tabbar">
+    <button class="tab-btn active" data-view="view-new">➕<span>Nuova</span></button>
+    <button class="tab-btn" data-view="view-list">📋<span>Spese</span></button>
+    <button class="tab-btn" data-view="view-reconcile">🔄<span>Verifica</span></button>
+    <button class="tab-btn" data-view="view-reports">📊<span>Report</span></button>
+    <button class="tab-btn" data-view="view-settings">⚙️<span>Impostazioni</span></button>
+  </nav>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ===== config.js ===== */
+// ============================================================
+// CONFIGURAZIONE — progetto Supabase "Le mie spese"
+// Questi valori sono già compilati e pronti all'uso.
+// (La publishable key è pensata per essere pubblica: l'accesso
+//  ai dati è protetto dal login e dalle regole RLS del database.)
+// ============================================================
+const SUPABASE_URL = "https://vtkawdyochpjampfufne.supabase.co";
+const SUPABASE_ANON_KEY = "sb_publishable_3QFz97phvuNtMnfPd6E4RQ_8_JkDnaz";
+
+
+/* ===== supabaseClient.js ===== */
+
+// La libreria Supabase è caricata da CDN in index.html e crea l'oggetto globale `supabase`.
+// Qui creiamo il client vero e proprio che useremo in tutta l'app.
+const sb = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+
+/* ===== store.js ===== */
+
+// Cache in memoria di categorie e metodi di pagamento dell'utente corrente,
+// così non li richiediamo al database ad ogni cambio di schermata.
+const state = {
+  userId: null,
+  categories: [],
+  paymentMethods: [],
+};
+
+async function loadLookups(userId) {
+  state.userId = userId;
+  const [{ data: cats, error: catErr }, { data: pays, error: payErr }] = await Promise.all([
+    sb.from("categories").select("*").eq("user_id", userId).order("sort_order"),
+    sb.from("payment_methods").select("*").eq("user_id", userId).order("sort_order"),
+  ]);
+  if (catErr) console.error(catErr);
+  if (payErr) console.error(payErr);
+  state.categories = cats || [];
+  state.paymentMethods = pays || [];
+}
+
+function categoryName(id) {
+  return state.categories.find((c) => c.id === id)?.name || "—";
+}
+
+function paymentName(id) {
+  return state.paymentMethods.find((p) => p.id === id)?.name || "—";
+}
+
+function isReconcilable(paymentId) {
+  return !!state.paymentMethods.find((p) => p.id === paymentId)?.reconcilable;
+}
+
+async function addCategory(name) {
+  const sort_order = state.categories.length + 1;
+  const { data, error } = await sb
+    .from("categories")
+    .insert({ user_id: state.userId, name, sort_order })
+    .select()
+    .single();
+  if (error) throw error;
+  state.categories.push(data);
+  return data;
+}
+
+async function deleteCategory(id) {
+  const { error } = await sb.from("categories").delete().eq("id", id);
+  if (error) throw error;
+  state.categories = state.categories.filter((c) => c.id !== id);
+}
+
+async function addPaymentMethod(name, reconcilable) {
+  const sort_order = state.paymentMethods.length + 1;
+  const { data, error } = await sb
+    .from("payment_methods")
+    .insert({ user_id: state.userId, name, reconcilable, sort_order })
+    .select()
+    .single();
+  if (error) throw error;
+  state.paymentMethods.push(data);
+  return data;
+}
+
+async function deletePaymentMethod(id) {
+  const { error } = await sb.from("payment_methods").delete().eq("id", id);
+  if (error) throw error;
+  state.paymentMethods = state.paymentMethods.filter((p) => p.id !== id);
+}
+
+// ---- helper per riempire i menu a tendina nella UI ----
+function fillSelect(selectEl, items, { includeAll = false, allLabel = "Tutte" } = {}) {
+  selectEl.innerHTML = "";
+  if (includeAll) {
+    const opt = document.createElement("option");
+    opt.value = "";
+    opt.textContent = allLabel;
+    selectEl.appendChild(opt);
+  }
+  for (const item of items) {
+    const opt = document.createElement("option");
+    opt.value = item.id;
+    opt.textContent = item.name;
+    selectEl.appendChild(opt);
+  }
+}
+
+
+/* ===== parser.js ===== */
+// ============================================================
+// Interpretazione del testo dettato/scritto per estrarre
+// importo, categoria, metodo di pagamento e data.
+// Tutto gira in locale nel telefono, nessun servizio esterno.
+// ============================================================
+
+// Numeri scritti in lettere (l'iOS a volte non li converte tutti in cifre)
+const WORD_NUMBERS = {
+  "zero": 0, "un": 1, "uno": 1, "una": 1, "due": 2, "tre": 3, "quattro": 4,
+  "cinque": 5, "sei": 6, "sette": 7, "otto": 8, "nove": 9, "dieci": 10,
+  "undici": 11, "dodici": 12, "tredici": 13, "quattordici": 14, "quindici": 15,
+  "sedici": 16, "diciassette": 17, "diciotto": 18, "diciannove": 19, "venti": 20,
+  "trenta": 30, "quaranta": 40, "cinquanta": 50, "sessanta": 60,
+  "settanta": 70, "ottanta": 80, "novanta": 90, "cento": 100
+};
+
+// Parole chiave -> nome categoria di default (usate come fallback se il
+// testo non contiene già il nome esatto di una categoria dell'utente)
+const CATEGORY_KEYWORDS = {
+  "Bar": ["bar", "caffè", "caffe", "cappuccino", "cornetto", "brioche", "aperitivo"],
+  "Spesa": ["spesa", "supermercato", "super mercato", "alimentari", "esselunga", "conad", "coop", "carrefour", "lidl"],
+  "Carburante": ["benzina", "carburante", "diesel", "gasolio", "distributore", "rifornimento"],
+  "Ristorante": ["ristorante", "pizzeria", "trattoria", "cena fuori", "pranzo fuori", "sushi", "kebab"],
+  "Trasporti": ["treno", "autobus", "bus", "metro", "metropolitana", "taxi", "parcheggio", "autostrada", "pedaggio", "biglietto"],
+  "Salute": ["farmacia", "medico", "dottore", "dentista", "visita medica", "parafarmacia"],
+  "Casa": ["affitto", "bolletta", "bollette", "condominio", "luce", "gas", "internet", "casa"],
+  "Abbigliamento": ["vestiti", "abbigliamento", "scarpe", "negozio", "zara", "h&m"],
+  "Tempo libero": ["cinema", "cinema", "concerto", "palestra", "sport", "libro", "videogioco", "netflix", "abbonamento"],
+};
+
+// Parole chiave -> nome metodo di pagamento
+const PAYMENT_KEYWORDS = {
+  "Contanti": ["contanti", "cash", "contante"],
+  "Carta di credito": ["carta di credito", "carta credito", "con la carta", "carta bancomat", "bancomat", "carta"],
+  "Satispay": ["satispay"],
+  "PayPal": ["paypal", "pay pal"],
+  "Bonifico": ["bonifico", "bonifico bancario"],
+};
+
+function normalize(text) {
+  return text.toLowerCase().trim();
+}
+
+function extractAmount(text) {
+  // Prova prima con "X euro e Y (centesimi)", perché va controllata
+  // prima del semplice "X euro" (altrimenti si fermerebbe a "X").
+  const euroECent = text.match(/(\d+)\s*euro\s*e\s*(\d+)/i);
+  if (euroECent) {
+    return parseFloat(`${euroECent[1]}.${euroECent[2].padStart(2, "0").slice(0, 2)}`);
+  }
+
+  // Cerca pattern tipo "12,50" "12.50" "12" seguiti/preceduti da euro o €
+  const patterns = [
+    /(\d+[.,]\d{1,2})\s*(?:€|euro)/i,
+    /€\s*(\d+[.,]\d{1,2})/i,
+    /(\d+)\s*(?:€|euro)/i,
+    /€\s*(\d+)/i,
+    /(\d+[.,]\d{1,2})/,
+  ];
+  for (const p of patterns) {
+    const m = text.match(p);
+    if (m) {
+      return parseFloat(m[1].replace(",", "."));
+    }
+  }
+
+  // Prova a interpretare numeri scritti in lettere prima di "euro"
+  const words = text.split(/\s+/);
+  for (let i = 0; i < words.length; i++) {
+    const w = words[i].replace(/[^\wàèéìòù]/gi, "");
+    if (WORD_NUMBERS[w] !== undefined && /euro/i.test(words[i + 1] || "")) {
+      return WORD_NUMBERS[w];
+    }
+  }
+
+  return null;
+}
+
+function extractCategory(text, userCategories) {
+  // 1) match diretto: il testo contiene già il nome esatto di una categoria dell'utente
+  for (const cat of userCategories) {
+    if (text.includes(cat.name.toLowerCase())) return cat.id;
+  }
+  // 2) match tramite parole chiave, poi cerchiamo la categoria dell'utente con quel nome
+  for (const [catName, keywords] of Object.entries(CATEGORY_KEYWORDS)) {
+    if (keywords.some((k) => text.includes(k))) {
+      const found = userCategories.find((c) => c.name.toLowerCase() === catName.toLowerCase());
+      if (found) return found.id;
+    }
+  }
+  return null;
+}
+
+function extractPayment(text, userPayments) {
+  for (const [payName, keywords] of Object.entries(PAYMENT_KEYWORDS)) {
+    if (keywords.some((k) => text.includes(k))) {
+      const found = userPayments.find((p) => p.name.toLowerCase() === payName.toLowerCase());
+      if (found) return found.id;
+    }
+  }
+  return null;
+}
+
+function extractDate(text) {
+  const today = new Date();
+  if (/\bieri\b/.test(text)) {
+    today.setDate(today.getDate() - 1);
+  } else if (/l['\s]?altro\s*ieri/.test(text)) {
+    today.setDate(today.getDate() - 2);
+  }
+  return today.toISOString().slice(0, 10);
+}
+
+function buildDescription(text, amount) {
+  let desc = text;
+  // rimuove per prima cosa il pattern "X euro e Y" (es. "42 euro e 50")
+  desc = desc.replace(/\d+\s*euro\s*e\s*\d+/gi, " ");
+  // rimuove l'importo e la parola euro/€ dal testo per lasciare solo la descrizione
+  desc = desc.replace(/(\d+[.,]?\d*)\s*(?:€|euro)?/gi, " ");
+  desc = desc.replace(/€/g, " ");
+  // rimuove le parole chiave di metodo pagamento più comuni
+  for (const keywords of Object.values(PAYMENT_KEYWORDS)) {
+    for (const k of keywords) {
+      desc = desc.replace(new RegExp(k, "gi"), " ");
+    }
+  }
+  desc = desc.replace(/\bcon\s+la\b|\bcon\b|\be\s+centesimi\b|\bieri\b|\boggi\b/gi, " ");
+  desc = desc.replace(/\s+/g, " ").trim();
+  if (!desc) desc = text.trim();
+  // capitalizza la prima lettera
+  return desc.charAt(0).toUpperCase() + desc.slice(1);
+}
+
+/**
+ * Interpreta il testo dettato e restituisce i campi individuati.
+ * Ogni campo può essere null se non è stato riconosciuto: la UI
+ * chiederà comunque conferma/completamento all'utente prima di salvare.
+ */
+function parseExpenseText(rawText, userCategories, userPayments) {
+  const text = normalize(rawText);
+  const amount = extractAmount(text);
+  const categoryId = extractCategory(text, userCategories);
+  const paymentMethodId = extractPayment(text, userPayments);
+  const date = extractDate(text);
+  const description = buildDescription(rawText, amount);
+
+  return { amount, description, categoryId, paymentMethodId, date, rawText };
+}
+
+
+/* ===== auth.js ===== */
+
+const authScreen = document.getElementById("auth-screen");
+const appScreen = document.getElementById("app");
+const authMessage = document.getElementById("auth-message");
+
+const loginForm = document.getElementById("login-form");
+const signupForm = document.getElementById("signup-form");
+const showSignupBtn = document.getElementById("show-signup");
+const showLoginBtn = document.getElementById("show-login");
+const logoutBtn = document.getElementById("logout-btn");
+
+showSignupBtn.addEventListener("click", () => {
+  loginForm.style.display = "none";
+  showSignupBtn.style.display = "none";
+  signupForm.style.display = "block";
+  showLoginBtn.style.display = "block";
+  authMessage.textContent = "";
+});
+
+showLoginBtn.addEventListener("click", () => {
+  signupForm.style.display = "none";
+  showLoginBtn.style.display = "none";
+  loginForm.style.display = "block";
+  showSignupBtn.style.display = "block";
+  authMessage.textContent = "";
+});
+
+loginForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  authMessage.className = "message";
+  authMessage.textContent = "Accesso in corso...";
+  const email = document.getElementById("login-email").value.trim();
+  const password = document.getElementById("login-password").value;
+  const { error } = await sb.auth.signInWithPassword({ email, password });
+  if (error) {
+    authMessage.className = "message error";
+    authMessage.textContent = "Errore: " + error.message;
+  }
+});
+
+signupForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  authMessage.className = "message";
+  authMessage.textContent = "Creazione account...";
+  const email = document.getElementById("signup-email").value.trim();
+  const password = document.getElementById("signup-password").value;
+  const { error } = await sb.auth.signUp({ email, password });
+  if (error) {
+    authMessage.className = "message error";
+    authMessage.textContent = "Errore: " + error.message;
+  } else {
+    authMessage.className = "message success";
+    authMessage.textContent = "Account creato! Se richiesto, controlla la mail per confermare, poi accedi.";
+  }
+});
+
+logoutBtn.addEventListener("click", async () => {
+  await sb.auth.signOut();
+});
+
+// Funzione chiamata da main.js quando l'utente è autenticato,
+// per far partire il caricamento dati dell'app
+let onAuthReadyCallback = null;
+function onAuthReady(cb) {
+  onAuthReadyCallback = cb;
+}
+
+function showApp() {
+  authScreen.style.display = "none";
+  appScreen.style.display = "flex";
+}
+
+function showAuth() {
+  appScreen.style.display = "none";
+  authScreen.style.display = "flex";
+}
+
+sb.auth.onAuthStateChange((event, session) => {
+  if (session) {
+    showApp();
+    if (onAuthReadyCallback) onAuthReadyCallback(session.user);
+  } else {
+    showAuth();
+  }
+});
+
+// Controllo iniziale (nel caso la sessione sia già salvata dal browser)
+async function checkInitialSession() {
+  const { data } = await sb.auth.getSession();
+  if (data.session) {
+    showApp();
+    if (onAuthReadyCallback) onAuthReadyCallback(data.session.user);
+  } else {
+    showAuth();
+  }
+}
+
+
+/* ===== expenses.js ===== */
+
+
+
+// ============================================================
+// VISTA "Nuova spesa"
+// ============================================================
+const voiceInput = document.getElementById("voice-input");
+const parseBtn = document.getElementById("parse-btn");
+const confirmBox = document.getElementById("expense-confirm");
+const fAmount = document.getElementById("f-amount");
+const fDescription = document.getElementById("f-description");
+const fCategory = document.getElementById("f-category");
+const fPayment = document.getElementById("f-payment");
+const fDate = document.getElementById("f-date");
+const saveBtn = document.getElementById("save-expense-btn");
+const cancelBtn = document.getElementById("cancel-expense-btn");
+const newExpenseMessage = document.getElementById("new-expense-message");
+
+let lastRawText = "";
+
+function initNewExpenseView() {
+  fillSelect(fCategory, state.categories);
+  fillSelect(fPayment, state.paymentMethods);
+}
+
+parseBtn.addEventListener("click", () => {
+  const text = voiceInput.value.trim();
+  if (!text) return;
+  lastRawText = text;
+  const parsed = parseExpenseText(text, state.categories, state.paymentMethods);
+
+  fAmount.value = parsed.amount ?? "";
+  fDescription.value = parsed.description || "";
+  fDate.value = parsed.date;
+
+  fillSelect(fCategory, state.categories);
+  if (parsed.categoryId) fCategory.value = parsed.categoryId;
+
+  fillSelect(fPayment, state.paymentMethods);
+  if (parsed.paymentMethodId) fPayment.value = parsed.paymentMethodId;
+
+  confirmBox.style.display = "block";
+  newExpenseMessage.textContent = "";
+
+  if (!parsed.amount) {
+    newExpenseMessage.className = "message error";
+    newExpenseMessage.textContent = "Non ho capito l'importo: controllalo prima di salvare.";
+  }
+});
+
+cancelBtn.addEventListener("click", () => {
+  confirmBox.style.display = "none";
+  voiceInput.value = "";
+  newExpenseMessage.textContent = "";
+});
+
+saveBtn.addEventListener("click", async () => {
+  const amount = parseFloat(fAmount.value);
+  if (!amount || amount <= 0) {
+    newExpenseMessage.className = "message error";
+    newExpenseMessage.textContent = "Inserisci un importo valido.";
+    return;
+  }
+  const paymentMethodId = fPayment.value || null;
+  const reconciliation_status = paymentMethodId && isReconcilable(paymentMethodId) ? "pending" : "na";
+
+  const { error } = await sb.from("expenses").insert({
+    user_id: state.userId,
+    amount,
+    description: fDescription.value.trim(),
+    category_id: fCategory.value || null,
+    payment_method_id: paymentMethodId,
+    expense_date: fDate.value,
+    raw_input: lastRawText,
+    reconciliation_status,
+  });
+
+  if (error) {
+    newExpenseMessage.className = "message error";
+    newExpenseMessage.textContent = "Errore nel salvataggio: " + error.message;
+    return;
+  }
+
+  newExpenseMessage.className = "message success";
+  newExpenseMessage.textContent = "Spesa salvata!";
+  confirmBox.style.display = "none";
+  voiceInput.value = "";
+  setTimeout(() => (newExpenseMessage.textContent = ""), 2500);
+});
+
+// ============================================================
+// VISTA "Elenco spese"
+// ============================================================
+const filterMonth = document.getElementById("filter-month");
+const filterCategory = document.getElementById("filter-category");
+const filterPayment = document.getElementById("filter-payment");
+const expensesList = document.getElementById("expenses-list");
+const expensesTotal = document.getElementById("expenses-total");
+
+async function initListView() {
+  fillSelect(filterCategory, state.categories, { includeAll: true, allLabel: "Tutte le categorie" });
+  fillSelect(filterPayment, state.paymentMethods, { includeAll: true, allLabel: "Tutti i metodi" });
+  if (!filterMonth.value) {
+    filterMonth.value = new Date().toISOString().slice(0, 7);
+  }
+  await refreshList();
+}
+
+filterMonth.addEventListener("change", refreshList);
+filterCategory.addEventListener("change", refreshList);
+filterPayment.addEventListener("change", refreshList);
+
+async function refreshList() {
+  let query = sb.from("expenses").select("*").eq("user_id", state.userId).order("expense_date", { ascending: false });
+
+  if (filterMonth.value) {
+    const [y, m] = filterMonth.value.split("-");
+    const start = `${y}-${m}-01`;
+    const lastDay = new Date(parseInt(y), parseInt(m), 0).getDate();
+    const end = `${y}-${m}-${String(lastDay).padStart(2, "0")}`;
+    query = query.gte("expense_date", start).lte("expense_date", end);
+  }
+  if (filterCategory.value) query = query.eq("category_id", filterCategory.value);
+  if (filterPayment.value) query = query.eq("payment_method_id", filterPayment.value);
+
+  const { data, error } = await query;
+  if (error) {
+    expensesList.innerHTML = `<p class="message error">Errore: ${error.message}</p>`;
+    return;
+  }
+
+  const total = data.reduce((sum, e) => sum + Number(e.amount), 0);
+  expensesTotal.textContent = `Totale: € ${total.toFixed(2)} (${data.length} spese)`;
+
+  expensesList.innerHTML = "";
+  if (data.length === 0) {
+    expensesList.innerHTML = `<p class="muted">Nessuna spesa trovata per questo filtro.</p>`;
+    return;
+  }
+
+  for (const exp of data) {
+    const item = document.createElement("div");
+    item.className = "list-item";
+    const statusLabel = {
+      na: "",
+      pending: "Da verificare",
+      matched: "✅ Verificata",
+      discrepancy: "⚠️ Discrepanza",
+    }[exp.reconciliation_status] || "";
+
+    item.innerHTML = `
+      <div class="li-main">
+        <div class="li-title">${exp.description || categoryName(exp.category_id)}</div>
+        <div class="li-sub">${exp.expense_date} · ${categoryName(exp.category_id)} · ${paymentName(exp.payment_method_id)} ${statusLabel ? "· " + statusLabel : ""}</div>
+      </div>
+      <div class="li-amount">€ ${Number(exp.amount).toFixed(2)}</div>
+      <button class="btn danger-outline" data-id="${exp.id}">Elimina</button>
+    `;
+    item.querySelector("button").addEventListener("click", async () => {
+      if (!confirm("Eliminare questa spesa?")) return;
+      const { error: delErr } = await sb.from("expenses").delete().eq("id", exp.id);
+      if (delErr) alert("Errore: " + delErr.message);
+      else refreshList();
+    });
+    expensesList.appendChild(item);
+  }
+}
+
+
+
+/* ===== settings.js ===== */
+
+
+const categoriesList = document.getElementById("categories-list");
+const paymentsList = document.getElementById("payments-list");
+const newCategoryName = document.getElementById("new-category-name");
+const addCategoryBtn = document.getElementById("add-category-btn");
+const newPaymentName = document.getElementById("new-payment-name");
+const newPaymentReconcilable = document.getElementById("new-payment-reconcilable");
+const addPaymentBtn = document.getElementById("add-payment-btn");
+
+function initSettingsView() {
+  renderCategories();
+  renderPayments();
+}
+
+function renderCategories() {
+  categoriesList.innerHTML = "";
+  for (const cat of state.categories) {
+    const row = document.createElement("div");
+    row.className = "list-item";
+    row.innerHTML = `<div class="li-main"><div class="li-title">${cat.name}</div></div>
+      <button class="btn danger-outline" data-id="${cat.id}">Elimina</button>`;
+    row.querySelector("button").addEventListener("click", async () => {
+      if (!confirm(`Eliminare la categoria "${cat.name}"? Le spese già registrate la manterranno come testo, ma non sarà più selezionabile.`)) return;
+      try {
+        await deleteCategory(cat.id);
+        renderCategories();
+      } catch (e) {
+        alert("Errore: " + e.message);
+      }
+    });
+    categoriesList.appendChild(row);
+  }
+}
+
+function renderPayments() {
+  paymentsList.innerHTML = "";
+  for (const pay of state.paymentMethods) {
+    const row = document.createElement("div");
+    row.className = "list-item";
+    row.innerHTML = `<div class="li-main"><div class="li-title">${pay.name}</div>
+      <div class="li-sub">${pay.reconcilable ? "Riconciliabile con estratto conto" : "Non riconciliabile (es. contanti)"}</div></div>
+      <button class="btn danger-outline" data-id="${pay.id}">Elimina</button>`;
+    row.querySelector("button").addEventListener("click", async () => {
+      if (!confirm(`Eliminare il metodo "${pay.name}"?`)) return;
+      try {
+        await deletePaymentMethod(pay.id);
+        renderPayments();
+      } catch (e) {
+        alert("Errore: " + e.message);
+      }
+    });
+    paymentsList.appendChild(row);
+  }
+}
+
+addCategoryBtn.addEventListener("click", async () => {
+  const name = newCategoryName.value.trim();
+  if (!name) return;
+  try {
+    await addCategory(name);
+    newCategoryName.value = "";
+    renderCategories();
+  } catch (e) {
+    alert("Errore: " + e.message);
+  }
+});
+
+addPaymentBtn.addEventListener("click", async () => {
+  const name = newPaymentName.value.trim();
+  if (!name) return;
+  try {
+    await addPaymentMethod(name, newPaymentReconcilable.checked);
+    newPaymentName.value = "";
+    renderPayments();
+  } catch (e) {
+    alert("Errore: " + e.message);
+  }
+});
+
+
+/* ===== reconciliation.js ===== */
+
+
+const sourceSelect = document.getElementById("import-source");
+const fileInput = document.getElementById("import-file");
+const mappingBox = document.getElementById("column-mapping");
+const mapDate = document.getElementById("map-date");
+const mapAmount = document.getElementById("map-amount");
+const mapDescription = document.getElementById("map-description");
+const runBtn = document.getElementById("run-reconcile-btn");
+const message = document.getElementById("reconcile-message");
+const resultsBox = document.getElementById("reconcile-results");
+const countMatched = document.getElementById("count-matched");
+const countUnmatchedBank = document.getElementById("count-unmatched-bank");
+const countUnmatchedExpense = document.getElementById("count-unmatched-expense");
+const reconcileList = document.getElementById("reconcile-list");
+
+let parsedRows = []; // array di oggetti { header: valore }
+let headers = [];
+
+function initReconcileView() {
+  fileInput.value = "";
+  mappingBox.style.display = "none";
+  resultsBox.style.display = "none";
+  message.textContent = "";
+}
+
+fileInput.addEventListener("change", async () => {
+  const file = fileInput.files[0];
+  if (!file) return;
+  message.textContent = "Lettura file...";
+  try {
+    if (file.name.toLowerCase().endsWith(".csv")) {
+      await readCsv(file);
+    } else {
+      await readExcel(file);
+    }
+    if (parsedRows.length === 0) {
+      message.className = "message error";
+      message.textContent = "Il file non contiene righe leggibili.";
+      return;
+    }
+    headers = Object.keys(parsedRows[0]);
+    populateMappingSelects();
+    mappingBox.style.display = "block";
+    message.className = "message success";
+    message.textContent = `Letto file con ${parsedRows.length} righe. Controlla la corrispondenza delle colonne qui sotto.`;
+  } catch (e) {
+    message.className = "message error";
+    message.textContent = "Errore nella lettura del file: " + e.message;
+  }
+});
+
+function readCsv(file) {
+  return new Promise((resolve, reject) => {
+    Papa.parse(file, {
+      header: true,
+      skipEmptyLines: true,
+      complete: (res) => {
+        parsedRows = res.data;
+        resolve();
+      },
+      error: reject,
+    });
+  });
+}
+
+async function readExcel(file) {
+  const buffer = await file.arrayBuffer();
+  const wb = XLSX.read(buffer, { type: "array" });
+  const firstSheet = wb.Sheets[wb.SheetNames[0]];
+  parsedRows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+}
+
+function populateMappingSelects() {
+  for (const sel of [mapDate, mapAmount, mapDescription]) {
+    sel.innerHTML = "";
+    for (const h of headers) {
+      const opt = document.createElement("option");
+      opt.value = h;
+      opt.textContent = h;
+      sel.appendChild(opt);
+    }
+  }
+  // prova a indovinare la colonna giusta guardando il nome dell'intestazione
+  guessColumn(mapDate, ["data", "date", "data valuta", "data contabile"]);
+  guessColumn(mapAmount, ["importo", "amount", "valore", "dare", "avere"]);
+  guessColumn(mapDescription, ["descrizione", "causale", "description", "dettaglio", "note"]);
+}
+
+function guessColumn(selectEl, candidates) {
+  const lowerHeaders = headers.map((h) => h.toLowerCase());
+  for (const c of candidates) {
+    const idx = lowerHeaders.findIndex((h) => h.includes(c));
+    if (idx >= 0) {
+      selectEl.value = headers[idx];
+      return;
+    }
+  }
+}
+
+function parseDateFlexible(value) {
+  if (value instanceof Date) return value.toISOString().slice(0, 10);
+  const str = String(value).trim();
+  // formati comuni: 31/01/2026, 31-01-2026, 2026-01-31
+  let m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
+  if (m) {
+    const [, d, mo, y] = m;
+    return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  m = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if (m) {
+    const [, y, mo, d] = m;
+    return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+  }
+  const d = new Date(str);
+  if (!isNaN(d)) return d.toISOString().slice(0, 10);
+  return null;
+}
+
+function parseAmountFlexible(value) {
+  if (typeof value === "number") return value;
+  let str = String(value).trim().replace(/[€\s]/g, "");
+  // formato italiano 1.234,56 -> 1234.56
+  if (/,\d{1,2}$/.test(str)) {
+    str = str.replace(/\./g, "").replace(",", ".");
+  }
+  const num = parseFloat(str);
+  return isNaN(num) ? null : num;
+}
+
+runBtn.addEventListener("click", async () => {
+  message.className = "message";
+  message.textContent = "Riconciliazione in corso...";
+
+  const source = sourceSelect.value;
+  const rows = parsedRows
+    .map((r) => ({
+      date: parseDateFlexible(r[mapDate.value]),
+      amount: parseAmountFlexible(r[mapAmount.value]),
+      description: String(r[mapDescription.value] || ""),
+    }))
+    .filter((r) => r.date && r.amount !== null && r.amount !== 0);
+
+  if (rows.length === 0) {
+    message.className = "message error";
+    message.textContent = "Nessuna riga valida trovata: controlla la corrispondenza delle colonne.";
+    return;
+  }
+
+  // 1) crea il record di import
+  const { data: importRow, error: importErr } = await sb
+    .from("statement_imports")
+    .insert({ user_id: state.userId, source, file_name: fileInput.files[0]?.name })
+    .select()
+    .single();
+  if (importErr) {
+    message.className = "message error";
+    message.textContent = "Errore: " + importErr.message;
+    return;
+  }
+
+  // 2) inserisce i movimenti
+  const txToInsert = rows.map((r) => ({
+    user_id: state.userId,
+    import_id: importRow.id,
+    amount: r.amount,
+    transaction_date: r.date,
+    description: r.description,
+    source,
+  }));
+  const { data: insertedTx, error: txErr } = await sb.from("bank_transactions").insert(txToInsert).select();
+  if (txErr) {
+    message.className = "message error";
+    message.textContent = "Errore nel salvataggio dei movimenti: " + txErr.message;
+    return;
+  }
+
+  // 3) prende le spese "pending" (riconciliabili, non ancora verificate)
+  const { data: pendingExpenses, error: expErr } = await sb
+    .from("expenses")
+    .select("*")
+    .eq("user_id", state.userId)
+    .eq("reconciliation_status", "pending");
+  if (expErr) {
+    message.className = "message error";
+    message.textContent = "Errore nel caricamento delle spese: " + expErr.message;
+    return;
+  }
+
+  const { matches, unmatchedTx, unmatchedExpenses } = matchTransactions(insertedTx, pendingExpenses);
+
+  // 4) applica gli aggiornamenti al database
+  for (const { tx, expense } of matches) {
+    await sb.from("bank_transactions").update({ status: "matched", matched_expense_id: expense.id }).eq("id", tx.id);
+    await sb.from("expenses").update({ reconciliation_status: "matched", matched_transaction_id: tx.id }).eq("id", expense.id);
+  }
+  if (unmatchedExpenses.length > 0) {
+    await sb.from("expenses").update({ reconciliation_status: "discrepancy" }).in("id", unmatchedExpenses.map((e) => e.id));
+  }
+
+  message.className = "message success";
+  message.textContent = `Riconciliazione completata: ${matches.length} corrispondenze trovate.`;
+  renderResults(matches, unmatchedTx, unmatchedExpenses);
+});
+
+// Matching per importo (uguale, tolleranza 1 centesimo) e data
+// (entro 3 giorni, per coprire i tempi di addebito di carte/bonifici).
+// Ogni movimento bancario può abbinarsi a una sola spesa.
+function matchTransactions(bankTxs, expenses) {
+  const availableExpenses = [...expenses];
+  const matches = [];
+  const unmatchedTx = [];
+
+  for (const tx of bankTxs) {
+    const txAmount = Math.abs(tx.amount);
+    const txDate = new Date(tx.transaction_date);
+
+    let bestIdx = -1;
+    let bestDiffDays = Infinity;
+    availableExpenses.forEach((exp, idx) => {
+      const amountMatches = Math.abs(Number(exp.amount) - txAmount) < 0.01;
+      if (!amountMatches) return;
+      const expDate = new Date(exp.expense_date);
+      const diffDays = Math.abs((txDate - expDate) / 86400000);
+      if (diffDays <= 3 && diffDays < bestDiffDays) {
+        bestDiffDays = diffDays;
+        bestIdx = idx;
+      }
+    });
+
+    if (bestIdx >= 0) {
+      const [expense] = availableExpenses.splice(bestIdx, 1);
+      matches.push({ tx, expense });
+    } else {
+      unmatchedTx.push(tx);
+    }
+  }
+
+  return { matches, unmatchedTx, unmatchedExpenses: availableExpenses };
+}
+
+function renderResults(matches, unmatchedTx, unmatchedExpenses) {
+  resultsBox.style.display = "block";
+  countMatched.textContent = matches.length;
+  countUnmatchedBank.textContent = unmatchedTx.length;
+  countUnmatchedExpense.textContent = unmatchedExpenses.length;
+
+  reconcileList.innerHTML = "";
+
+  for (const { tx, expense } of matches) {
+    reconcileList.appendChild(
+      row("status-matched", `✅ € ${Math.abs(tx.amount).toFixed(2)}`, `${tx.transaction_date} · ${tx.description || "movimento"} ↔ spesa "${expense.description || categoryName(expense.category_id)}"`)
+    );
+  }
+  for (const tx of unmatchedTx) {
+    reconcileList.appendChild(
+      row("status-discrepancy", `⚠️ € ${Math.abs(tx.amount).toFixed(2)}`, `${tx.transaction_date} · ${tx.description || "movimento"} — addebito senza spesa registrata corrispondente`)
+    );
+  }
+  for (const exp of unmatchedExpenses) {
+    reconcileList.appendChild(
+      row("status-discrepancy", `⚠️ € ${Number(exp.amount).toFixed(2)}`, `${exp.expense_date} · ${exp.description || categoryName(exp.category_id)} (${paymentName(exp.payment_method_id)}) — spesa registrata senza addebito trovato`)
+    );
+  }
+}
+
+function row(cls, amountText, subText) {
+  const el = document.createElement("div");
+  el.className = "list-item " + cls;
+  el.innerHTML = `<div class="li-main"><div class="li-sub">${subText}</div></div><div class="li-amount">${amountText}</div>`;
+  return el;
+}
+
+
+/* ===== reports.js ===== */
+
+
+const periodSelect = document.getElementById("report-period");
+const monthInput = document.getElementById("report-month");
+const totalEl = document.getElementById("report-total");
+const diffEl = document.getElementById("report-diff");
+
+let chartCategory, chartTrend, chartPayment;
+
+function initReportsView() {
+  if (!monthInput.value) monthInput.value = new Date().toISOString().slice(0, 7);
+  renderReports();
+}
+
+periodSelect.addEventListener("change", renderReports);
+monthInput.addEventListener("change", renderReports);
+
+function monthBounds(yyyyMm) {
+  const [y, m] = yyyyMm.split("-").map(Number);
+  const start = `${yyyyMm}-01`;
+  const lastDay = new Date(y, m, 0).getDate();
+  const end = `${yyyyMm}-${String(lastDay).padStart(2, "0")}`;
+  return { start, end, year: y, month: m };
+}
+
+function shiftMonth(yyyyMm, delta) {
+  const [y, m] = yyyyMm.split("-").map(Number);
+  const d = new Date(y, m - 1 + delta, 1);
+  return `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}`;
+}
+
+async function fetchExpenses(start, end) {
+  const { data, error } = await sb
+    .from("expenses")
+    .select("*")
+    .eq("user_id", state.userId)
+    .gte("expense_date", start)
+    .lte("expense_date", end);
+  if (error) {
+    console.error(error);
+    return [];
+  }
+  return data;
+}
+
+function sum(list) {
+  return list.reduce((s, e) => s + Number(e.amount), 0);
+}
+
+function isoWeekLabel(dateStr) {
+  const d = new Date(dateStr);
+  const target = new Date(d.valueOf());
+  const dayNr = (d.getDay() + 6) % 7;
+  target.setDate(target.getDate() - dayNr + 3);
+  const firstThursday = new Date(target.getFullYear(), 0, 4);
+  const weekNumber = 1 + Math.round(((target - firstThursday) / 86400000 - 3 + ((firstThursday.getDay() + 6) % 7)) / 7);
+  return `Sett. ${weekNumber}`;
+}
+
+async function renderReports() {
+  const period = periodSelect.value;
+  const refMonth = monthInput.value;
+  if (!refMonth) return;
+
+  const { start, end, year } = monthBounds(refMonth);
+
+  let currentStart = start, currentEnd = end, prevStart, prevEnd;
+  if (period === "year") {
+    currentStart = `${year}-01-01`;
+    currentEnd = `${year}-12-31`;
+    prevStart = `${year - 1}-01-01`;
+    prevEnd = `${year - 1}-12-31`;
+  } else {
+    const prevMonth = shiftMonth(refMonth, -1);
+    const prevBounds = monthBounds(prevMonth);
+    prevStart = prevBounds.start;
+    prevEnd = prevBounds.end;
+  }
+
+  const [current, previous] = await Promise.all([
+    fetchExpenses(currentStart, currentEnd),
+    fetchExpenses(prevStart, prevEnd),
+  ]);
+
+  const totalCurrent = sum(current);
+  const totalPrevious = sum(previous);
+  totalEl.textContent = `€ ${totalCurrent.toFixed(2)}`;
+
+  if (totalPrevious > 0) {
+    const diffPct = ((totalCurrent - totalPrevious) / totalPrevious) * 100;
+    const sign = diffPct >= 0 ? "+" : "";
+    diffEl.textContent = `${sign}${diffPct.toFixed(0)}%`;
+  } else {
+    diffEl.textContent = "n/d";
+  }
+
+  renderCategoryChart(current);
+  renderPaymentChart(current);
+  renderTrendChart(current, period, refMonth, year);
+}
+
+function renderCategoryChart(expenses) {
+  const totals = {};
+  for (const e of expenses) {
+    const name = categoryName(e.category_id);
+    totals[name] = (totals[name] || 0) + Number(e.amount);
+  }
+  const labels = Object.keys(totals);
+  const data = Object.values(totals);
+
+  if (chartCategory) chartCategory.destroy();
+  chartCategory = new Chart(document.getElementById("chart-category"), {
+    type: "pie",
+    data: { labels, datasets: [{ data }] },
+    options: { responsive: true, plugins: { legend: { position: "bottom" } } },
+  });
+}
+
+function renderPaymentChart(expenses) {
+  const totals = {};
+  for (const e of expenses) {
+    const name = paymentName(e.payment_method_id);
+    totals[name] = (totals[name] || 0) + Number(e.amount);
+  }
+  const labels = Object.keys(totals);
+  const data = Object.values(totals);
+
+  if (chartPayment) chartPayment.destroy();
+  chartPayment = new Chart(document.getElementById("chart-payment"), {
+    type: "bar",
+    data: { labels, datasets: [{ label: "€", data }] },
+    options: { responsive: true, plugins: { legend: { display: false } } },
+  });
+}
+
+function renderTrendChart(expenses, period, refMonth, year) {
+  const totals = {};
+  const order = [];
+
+  if (period === "year") {
+    for (let m = 1; m <= 12; m++) {
+      const label = new Date(year, m - 1, 1).toLocaleDateString("it-IT", { month: "short" });
+      totals[label] = 0;
+      order.push(label);
+    }
+    for (const e of expenses) {
+      const m = new Date(e.expense_date).getMonth();
+      const label = order[m];
+      totals[label] += Number(e.amount);
+    }
+  } else if (period === "week") {
+    for (const e of expenses) {
+      const label = isoWeekLabel(e.expense_date);
+      if (!(label in totals)) order.push(label);
+      totals[label] = (totals[label] || 0) + Number(e.amount);
+    }
+    order.sort((a, b) => parseInt(a.replace(/\D/g, "")) - parseInt(b.replace(/\D/g, "")));
+  } else {
+    // giorno per giorno nel mese selezionato
+    const { year: y, month: m } = monthBounds(refMonth);
+    const lastDay = new Date(y, m, 0).getDate();
+    for (let d = 1; d <= lastDay; d++) {
+      order.push(String(d));
+      totals[String(d)] = 0;
+    }
+    for (const e of expenses) {
+      const d = new Date(e.expense_date).getDate();
+      totals[String(d)] += Number(e.amount);
+    }
+  }
+
+  const labels = order;
+  const data = order.map((l) => Math.round(totals[l] * 100) / 100);
+
+  if (chartTrend) chartTrend.destroy();
+  chartTrend = new Chart(document.getElementById("chart-trend"), {
+    type: period === "month" ? "line" : "bar",
+    data: { labels, datasets: [{ label: "€ spesi", data, fill: false, tension: 0.25 }] },
+    options: { responsive: true, plugins: { legend: { display: false } } },
+  });
+}
+
+
+/* ===== main.js ===== */
+
+
+
+
+
+
+const tabButtons = document.querySelectorAll(".tab-btn");
+const views = document.querySelectorAll(".view");
+
+const viewInitializers = {
+  "view-new": initNewExpenseView,
+  "view-list": initListView,
+  "view-reconcile": initReconcileView,
+  "view-reports": initReportsView,
+  "view-settings": initSettingsView,
+};
+
+function showView(viewId) {
+  views.forEach((v) => (v.style.display = v.id === viewId ? "block" : "none"));
+  tabButtons.forEach((b) => b.classList.toggle("active", b.dataset.view === viewId));
+  const init = viewInitializers[viewId];
+  if (init) init();
+}
+
+tabButtons.forEach((btn) => {
+  btn.addEventListener("click", () => showView(btn.dataset.view));
+});
+
+onAuthReady(async (user) => {
+  await loadLookups(user.id);
+  showView("view-new");
+});
+
+checkInitialSession();
+
+})();
+</script>
+</body>
+</html>
+
+const tabButtons = document.querySelectorAll(".tab-btn");
+const views = document.querySelectorAll(".view");
+
+const viewInitializers = {
+  "view-new": initNewExpenseView,
+  "view-list": initListView,
+  "view-reconcile": initReconcileView,
+  "view-reports": initReportsView,
+  "view-settings": initSettingsView,
+};
+
+function showView(viewId) {
+  views.forEach((v) => (v.style.display = v.id === viewId ? "block" : "none"));
+  tabButtons.forEach((b) => b.classList.toggle("active", b.dataset.view === viewId));
+  const init = viewInitializers[viewId];
+  if (init) init();
+}
+
+tabButtons.forEach((btn) => {
+  btn.addEventListener("click", () => showView(btn.dataset.view));
+});
+
+onAuthReady(async (user) => {
+  await loadLookups(user.id);
+  showView("view-new");
+});
+
+checkInitialSession();
+
+})();
+</script>
+</body>
+</html>
+
+
+
+const tabButtons = document.querySelectorAll(".tab-btn");
+const views = document.querySelectorAll(".view");
+
+const viewInitializers = {
+  "view-new": initNewExpenseView,
+  "view-list": initListView,
+  "view-reconcile": initReconcileView,
+  "view-reports": initReportsView,
+  "view-settings": initSettingsView,
+};
+
+function showView(viewId) {
+  views.forEach((v) => (v.style.display = v.id === viewId ? "block" : "none"));
+  tabButtons.forEach((b) => b.classList.toggle("active", b.dataset.view === viewId));
+  const init = viewInitializers[viewId];
+  if (init) init();
+}
+
+tabButtons.forEach((btn) => {
+  btn.addEventListener("click", () => showView(btn.dataset.view));
+});
+
+onAuthReady(async (user) => {
+  await loadLookups(user.id);
+  showView("view-new");
+});
+
+checkInitialSession();
+
+})();
+</script>
+</body>
+</html>
