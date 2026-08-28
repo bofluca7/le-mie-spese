@@ -226,8 +226,9 @@ canvas { margin: 6px 0 20px; }
       <input type="password" id="login-password" required autocomplete="current-password" />
       <button type="submit" class="btn primary">Accedi</button>
     </form>
+    <button id="show-forgot" class="btn link">Password dimenticata?</button>
     <button id="show-signup" class="btn link">Non hai un account? Registrati</button>
-    <button id="show-login" class="btn link" style="display:none">Hai già un account? Accedi</button>
+    <button id="show-login" class="btn link" style="display:none">Torna all'accesso</button>
     <form id="signup-form" style="display:none">
       <label>Email</label>
       <input type="email" id="signup-email" required autocomplete="username" />
@@ -235,6 +236,24 @@ canvas { margin: 6px 0 20px; }
       <input type="password" id="signup-password" required autocomplete="new-password" />
       <button type="submit" class="btn primary">Crea account</button>
     </form>
+
+    <!-- richiesta link di reimpostazione -->
+    <form id="forgot-form" style="display:none">
+      <label>Email</label>
+      <input type="email" id="forgot-email" required autocomplete="username" />
+      <button type="submit" class="btn primary">Inviami il link per reimpostare</button>
+    </form>
+
+    <!-- inserimento nuova password (compare arrivando dal link ricevuto via email) -->
+    <form id="reset-form" style="display:none">
+      <p class="muted">Scegli una nuova password per il tuo account.</p>
+      <label>Nuova password (minimo 6 caratteri)</label>
+      <input type="password" id="reset-password" required autocomplete="new-password" />
+      <label>Ripeti la nuova password</label>
+      <input type="password" id="reset-password2" required autocomplete="new-password" />
+      <button type="submit" class="btn primary">Salva nuova password</button>
+    </form>
+
     <p id="auth-message" class="message"></p>
   </div>
 </div>
@@ -659,25 +678,31 @@ const authMessage = document.getElementById("auth-message");
 
 const loginForm = document.getElementById("login-form");
 const signupForm = document.getElementById("signup-form");
+const forgotForm = document.getElementById("forgot-form");
+const resetForm = document.getElementById("reset-form");
 const showSignupBtn = document.getElementById("show-signup");
 const showLoginBtn = document.getElementById("show-login");
+const showForgotBtn = document.getElementById("show-forgot");
 const logoutBtn = document.getElementById("logout-btn");
 
-showSignupBtn.addEventListener("click", () => {
-  loginForm.style.display = "none";
-  showSignupBtn.style.display = "none";
-  signupForm.style.display = "block";
-  showLoginBtn.style.display = "block";
-  authMessage.textContent = "";
-});
+// Mostra uno solo dei riquadri della schermata di accesso.
+function showAuthPanel(panel) {
+  loginForm.style.display = panel === "login" ? "block" : "none";
+  signupForm.style.display = panel === "signup" ? "block" : "none";
+  forgotForm.style.display = panel === "forgot" ? "block" : "none";
+  resetForm.style.display = panel === "reset" ? "block" : "none";
 
-showLoginBtn.addEventListener("click", () => {
-  signupForm.style.display = "none";
-  showLoginBtn.style.display = "none";
-  loginForm.style.display = "block";
-  showSignupBtn.style.display = "block";
+  showSignupBtn.style.display = panel === "login" ? "block" : "none";
+  showForgotBtn.style.display = panel === "login" ? "block" : "none";
+  showLoginBtn.style.display = panel === "signup" || panel === "forgot" ? "block" : "none";
+
   authMessage.textContent = "";
-});
+  authMessage.className = "message";
+}
+
+showSignupBtn.addEventListener("click", () => showAuthPanel("signup"));
+showLoginBtn.addEventListener("click", () => showAuthPanel("login"));
+showForgotBtn.addEventListener("click", () => showAuthPanel("forgot"));
 
 loginForm.addEventListener("submit", async (e) => {
   e.preventDefault();
@@ -708,6 +733,60 @@ signupForm.addEventListener("submit", async (e) => {
   }
 });
 
+// ---- Richiesta del link di reimpostazione password ----
+forgotForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  authMessage.className = "message";
+  authMessage.textContent = "Invio in corso...";
+  const email = document.getElementById("forgot-email").value.trim();
+  const { error } = await sb.auth.resetPasswordForEmail(email, {
+    redirectTo: window.location.origin + window.location.pathname,
+  });
+  if (error) {
+    authMessage.className = "message error";
+    authMessage.textContent = "Errore: " + error.message;
+  } else {
+    authMessage.className = "message success";
+    authMessage.textContent =
+      "Ti ho inviato una mail con il link per reimpostare la password. Controlla anche la cartella spam.";
+  }
+});
+
+// ---- Salvataggio della nuova password (dopo aver aperto il link) ----
+resetForm.addEventListener("submit", async (e) => {
+  e.preventDefault();
+  const pw1 = document.getElementById("reset-password").value;
+  const pw2 = document.getElementById("reset-password2").value;
+  if (pw1 !== pw2) {
+    authMessage.className = "message error";
+    authMessage.textContent = "Le due password non coincidono.";
+    return;
+  }
+  if (pw1.length < 6) {
+    authMessage.className = "message error";
+    authMessage.textContent = "La password deve avere almeno 6 caratteri.";
+    return;
+  }
+  authMessage.className = "message";
+  authMessage.textContent = "Salvataggio...";
+  const { error } = await sb.auth.updateUser({ password: pw1 });
+  if (error) {
+    authMessage.className = "message error";
+    authMessage.textContent = "Errore: " + error.message;
+    return;
+  }
+  isRecovering = false;
+  authMessage.className = "message success";
+  authMessage.textContent = "Password aggiornata! Stai per entrare...";
+  // ripulisce il token dall'indirizzo e apre l'app
+  history.replaceState(null, "", window.location.pathname);
+  const { data } = await sb.auth.getSession();
+  if (data.session) {
+    showApp();
+    if (onAuthReadyCallback) onAuthReadyCallback(data.session.user);
+  }
+});
+
 logoutBtn.addEventListener("click", async () => {
   await sb.auth.signOut();
 });
@@ -729,7 +808,23 @@ function showAuth() {
   authScreen.style.display = "flex";
 }
 
+// Quando si arriva dal link di reimpostazione ricevuto via email,
+// Supabase apre una sessione temporanea: in quel caso NON entriamo
+// nell'app, ma chiediamo la nuova password.
+let isRecovering = window.location.hash.includes("type=recovery");
+
 sb.auth.onAuthStateChange((event, session) => {
+  if (event === "PASSWORD_RECOVERY") {
+    isRecovering = true;
+    showAuth();
+    showAuthPanel("reset");
+    return;
+  }
+  if (isRecovering) {
+    showAuth();
+    showAuthPanel("reset");
+    return;
+  }
   if (session) {
     showApp();
     if (onAuthReadyCallback) onAuthReadyCallback(session.user);
@@ -740,6 +835,11 @@ sb.auth.onAuthStateChange((event, session) => {
 
 // Controllo iniziale (nel caso la sessione sia già salvata dal browser)
 async function checkInitialSession() {
+  if (isRecovering) {
+    showAuth();
+    showAuthPanel("reset");
+    return;
+  }
   const { data } = await sb.auth.getSession();
   if (data.session) {
     showApp();
