@@ -1190,7 +1190,54 @@ function populateMappingSelects() {
   // prova a indovinare la colonna giusta guardando il nome dell'intestazione
   guessColumn(mapDate, ["data", "date", "data valuta", "data contabile"]);
   guessColumn(mapAmount, ["importo", "amount", "valore", "dare", "avere"]);
-  guessColumn(mapDescription, ["descrizione", "causale", "description", "dettaglio", "note"]);
+  // su Satispay la colonna "Descrizione" è quasi sempre vuota: il nome del
+  // negozio sta in "Nome", quindi quella ha la precedenza.
+  if (isSatispayFormat()) {
+    guessColumn(mapDescription, ["nome", "descrizione"]);
+  } else {
+    guessColumn(mapDescription, ["descrizione", "causale", "description", "dettaglio", "note"]);
+  }
+}
+
+// ------------------------------------------------------------
+// Riconoscimento del formato Satispay
+// ------------------------------------------------------------
+function isSatispayFormat() {
+  const h = headers.map((x) => String(x).toLowerCase());
+  return h.includes("tipo") && h.includes("stato") && h.some((x) => x.includes("disponibilit"));
+}
+
+// Tipi di movimento Satispay che NON sono spese:
+// giroconti verso il salvadanaio, ricariche, prelievi, accrediti e rimborsi.
+const SATISPAY_NON_SPESE = [
+  "deposito risparmi",
+  "prelievo risparmi",
+  "deposito investimento",
+  "prelievo investimento",
+  "dalla banca",
+  "verso la banca",
+  "bonifico bancario in entrata",
+  "bonifico bancario in uscita",
+  "compenso",
+  "da una persona",
+  "regalo ricevuto",
+  "cashback",
+  "punti",
+  "premio",
+  "rimborso",
+];
+
+function satispayRowIsSpesa(row) {
+  const tipoCol = headers.find((h) => String(h).toLowerCase() === "tipo");
+  const statoCol = headers.find((h) => String(h).toLowerCase() === "stato");
+  const tipo = String(row[tipoCol] || "").toLowerCase();
+  const stato = String(row[statoCol] || "").toLowerCase();
+
+  // solo movimenti andati a buon fine
+  if (statoCol && !stato.includes("approvato")) return false;
+  // esclude giroconti, ricariche e accrediti
+  if (SATISPAY_NON_SPESE.some((t) => tipo.includes(t))) return false;
+  return true;
 }
 
 function guessColumn(selectEl, candidates) {
@@ -1239,13 +1286,26 @@ runBtn.addEventListener("click", async () => {
   message.textContent = "Riconciliazione in corso...";
 
   const source = sourceSelect.value;
-  const rows = parsedRows
+  const satispay = isSatispayFormat();
+  const totaleRighe = parsedRows.length;
+
+  // 1) su Satispay tiene solo i movimenti che sono davvero spese
+  let candidate = satispay ? parsedRows.filter(satispayRowIsSpesa) : parsedRows;
+
+  let rows = candidate
     .map((r) => ({
       date: parseDateFlexible(r[mapDate.value]),
       amount: parseAmountFlexible(r[mapAmount.value]),
       description: String(r[mapDescription.value] || ""),
     }))
     .filter((r) => r.date && r.amount !== null && r.amount !== 0);
+
+  // 2) se il file contiene sia uscite (negative) sia entrate (positive),
+  //    tiene solo le uscite: gli accrediti non sono spese.
+  const negativi = rows.filter((r) => r.amount < 0);
+  if (negativi.length > 0) rows = negativi;
+
+  const scartate = totaleRighe - rows.length;
 
   if (rows.length === 0) {
     message.className = "message error";
@@ -1305,7 +1365,14 @@ runBtn.addEventListener("click", async () => {
   }
 
   message.className = "message success";
-  message.textContent = `Riconciliazione completata: ${matches.length} corrispondenze trovate.`;
+  let msg = `Riconciliazione completata: ${matches.length} corrispondenze trovate.`;
+  if (scartate > 0) {
+    msg += ` Ho considerato ${rows.length} pagamenti su ${totaleRighe} righe del file`;
+    msg += satispay
+      ? " (esclusi salvadanaio, ricariche e accrediti, che non sono spese)."
+      : " (esclusi gli accrediti, che non sono spese).";
+  }
+  message.textContent = msg;
   renderResults(matches, unmatchedTx, unmatchedExpenses);
 });
 
