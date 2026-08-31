@@ -1145,7 +1145,6 @@ fileInput.addEventListener("change", async () => {
       message.textContent = "Il file non contiene righe leggibili.";
       return;
     }
-    headers = Object.keys(parsedRows[0]);
     populateMappingSelects();
     mappingBox.style.display = "block";
     message.className = "message success";
@@ -1159,10 +1158,10 @@ fileInput.addEventListener("change", async () => {
 function readCsv(file) {
   return new Promise((resolve, reject) => {
     Papa.parse(file, {
-      header: true,
+      header: false,
       skipEmptyLines: true,
       complete: (res) => {
-        parsedRows = res.data;
+        buildRowsFromMatrix(res.data);
         resolve();
       },
       error: reject,
@@ -1172,9 +1171,59 @@ function readCsv(file) {
 
 async function readExcel(file) {
   const buffer = await file.arrayBuffer();
-  const wb = XLSX.read(buffer, { type: "array" });
+  // cellDates: le date restano vere date, non numeri seriali di Excel
+  const wb = XLSX.read(buffer, { type: "array", cellDates: true });
   const firstSheet = wb.Sheets[wb.SheetNames[0]];
-  parsedRows = XLSX.utils.sheet_to_json(firstSheet, { defval: "" });
+  const matrix = XLSX.utils.sheet_to_json(firstSheet, { header: 1, defval: "" });
+  buildRowsFromMatrix(matrix);
+}
+
+// ------------------------------------------------------------
+// Molti estratti conto (Amex, Fineco, diverse banche) mettono nelle
+// prime righe intestazioni, loghi o dati del titolare: la vera riga
+// dei nomi di colonna è più in basso. Qui la individuiamo.
+// ------------------------------------------------------------
+const HEADER_HINTS = ["data", "importo", "descrizione", "causale", "amount", "date", "operazione"];
+
+function looksLikeHeaderRow(row) {
+  const cells = row.map((c) => String(c || "").trim().toLowerCase()).filter((c) => c);
+  if (cells.length < 3) return false;
+  const hits = cells.filter((c) => HEADER_HINTS.some((h) => c.includes(h))).length;
+  // deve contenere almeno due parole tipiche di intestazione
+  return hits >= 2;
+}
+
+function buildRowsFromMatrix(matrix) {
+  parsedRows = [];
+  headers = [];
+  if (!matrix || matrix.length === 0) return;
+
+  let headerIdx = matrix.findIndex(looksLikeHeaderRow);
+  if (headerIdx < 0) headerIdx = 0; // ripiego: prima riga
+
+  const rawHeaders = matrix[headerIdx].map((h, i) => {
+    const name = String(h || "").trim();
+    return name || `Colonna ${i + 1}`;
+  });
+
+  // rende univoci eventuali nomi ripetuti
+  const seen = {};
+  headers = rawHeaders.map((h) => {
+    if (seen[h]) {
+      seen[h]++;
+      return `${h} (${seen[h]})`;
+    }
+    seen[h] = 1;
+    return h;
+  });
+
+  for (let i = headerIdx + 1; i < matrix.length; i++) {
+    const row = matrix[i];
+    if (!row || row.every((c) => c === "" || c === null || c === undefined)) continue;
+    const obj = {};
+    headers.forEach((h, j) => (obj[h] = row[j] !== undefined ? row[j] : ""));
+    parsedRows.push(obj);
+  }
 }
 
 function populateMappingSelects() {
@@ -1251,22 +1300,71 @@ function guessColumn(selectEl, candidates) {
   }
 }
 
-function parseDateFlexible(value) {
-  if (value instanceof Date) return value.toISOString().slice(0, 10);
-  const str = String(value).trim();
-  // formati comuni: 31/01/2026, 31-01-2026, 2026-01-31
-  let m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{4})$/);
-  if (m) {
-    const [, d, mo, y] = m;
-    return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
+// Le date "01/08/2026" sono ambigue: in Italia 1 agosto, negli USA
+// (Amex usa il formato americano) 8 gennaio. Guardiamo TUTTA la colonna:
+// se da qualche parte il secondo numero supera 12 è per forza il giorno,
+// quindi il file usa mese/giorno/anno.
+function detectDateOrder(values) {
+  let primoMaggiore12 = false;
+  let secondoMaggiore12 = false;
+  for (const v of values) {
+    const m = String(v).trim().match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
+    if (!m) continue;
+    if (parseInt(m[1], 10) > 12) primoMaggiore12 = true;
+    if (parseInt(m[2], 10) > 12) secondoMaggiore12 = true;
   }
-  m = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})$/);
+  if (secondoMaggiore12 && !primoMaggiore12) return "mdy"; // stile americano
+  return "dmy"; // stile italiano/europeo (predefinito)
+}
+
+function parseDateFlexible(value, order = "dmy") {
+  if (value instanceof Date && !isNaN(value)) {
+    // usa la data locale, non UTC, per non slittare di un giorno
+    const y = value.getFullYear();
+    const mo = String(value.getMonth() + 1).padStart(2, "0");
+    const d = String(value.getDate()).padStart(2, "0");
+    return `${y}-${mo}-${d}`;
+  }
+  const str = String(value).trim();
+  if (!str) return null;
+
+  // anno per primo: 2026-01-31
+  let m = str.match(/^(\d{4})[\/\-](\d{1,2})[\/\-](\d{1,2})/);
   if (m) {
     const [, y, mo, d] = m;
     return `${y}-${mo.padStart(2, "0")}-${d.padStart(2, "0")}`;
   }
+
+  // due numeri e anno: l'ordine dipende da quanto rilevato sulla colonna
+  m = str.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})/);
+  if (m) {
+    let [, a, b, y] = m;
+    if (y.length === 2) y = "20" + y;
+    let giorno, mese;
+    if (order === "mdy") {
+      mese = a;
+      giorno = b;
+    } else {
+      giorno = a;
+      mese = b;
+    }
+    // se l'ordine ipotizzato dà un mese impossibile, lo inverte
+    if (parseInt(mese, 10) > 12 && parseInt(giorno, 10) <= 12) {
+      const tmp = mese;
+      mese = giorno;
+      giorno = tmp;
+    }
+    if (parseInt(mese, 10) > 12 || parseInt(giorno, 10) > 31) return null;
+    return `${y}-${mese.padStart(2, "0")}-${giorno.padStart(2, "0")}`;
+  }
+
   const d = new Date(str);
-  if (!isNaN(d)) return d.toISOString().slice(0, 10);
+  if (!isNaN(d)) {
+    const y = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, "0");
+    const dd = String(d.getDate()).padStart(2, "0");
+    return `${y}-${mo}-${dd}`;
+  }
   return null;
 }
 
@@ -1292,18 +1390,24 @@ runBtn.addEventListener("click", async () => {
   // 1) su Satispay tiene solo i movimenti che sono davvero spese
   let candidate = satispay ? parsedRows.filter(satispayRowIsSpesa) : parsedRows;
 
+  // rileva il formato delle date guardando l'intera colonna
+  const dateOrder = detectDateOrder(candidate.map((r) => r[mapDate.value]));
+
   let rows = candidate
     .map((r) => ({
-      date: parseDateFlexible(r[mapDate.value]),
+      date: parseDateFlexible(r[mapDate.value], dateOrder),
       amount: parseAmountFlexible(r[mapAmount.value]),
-      description: String(r[mapDescription.value] || ""),
+      description: String(r[mapDescription.value] || "").replace(/\s+/g, " ").trim(),
     }))
     .filter((r) => r.date && r.amount !== null && r.amount !== 0);
 
-  // 2) se il file contiene sia uscite (negative) sia entrate (positive),
-  //    tiene solo le uscite: gli accrediti non sono spese.
+  // 2) tiene solo le spese, scartando gli accrediti.
+  //    Alcuni estratti conto (Fineco, banche) mettono le spese in negativo;
+  //    altri (Amex) le mettono in positivo. Guardiamo qual è il segno
+  //    prevalente: quello sono le spese, l'altro sono rimborsi/accrediti.
   const negativi = rows.filter((r) => r.amount < 0);
-  if (negativi.length > 0) rows = negativi;
+  const positivi = rows.filter((r) => r.amount > 0);
+  rows = negativi.length >= positivi.length ? negativi : positivi;
 
   const scartate = totaleRighe - rows.length;
 
