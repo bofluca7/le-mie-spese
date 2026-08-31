@@ -313,14 +313,16 @@ canvas { margin: 6px 0 20px; }
     <!-- ---- Riconciliazione ---- -->
     <section id="view-reconcile" class="view" style="display:none">
       <h2>Riconciliazione estratti conto</h2>
-      <p class="muted">Carica il file (CSV o Excel) esportato dalla tua banca, da Satispay o da PayPal. I contanti non vengono riconciliati.</p>
+      <p class="muted">Carica il file (CSV o Excel) esportato dalla banca, dalla carta di credito, da Satispay o da PayPal. I contanti non vengono riconciliati.</p>
 
       <label>Origine del file</label>
       <select id="import-source">
         <option>Banca</option>
+        <option>Carta di credito</option>
         <option>Satispay</option>
         <option>PayPal</option>
       </select>
+      <p class="muted" style="margin-top:6px">Sulle carte e sul conto, gli addebiti PayPal vengono ignorati: quelle spese si verificano caricando l'estratto PayPal.</p>
 
       <label>File estratto conto</label>
       <input type="file" id="import-file" accept=".csv,.xlsx,.xls" />
@@ -1390,6 +1392,18 @@ runBtn.addEventListener("click", async () => {
   // 1) su Satispay tiene solo i movimenti che sono davvero spese
   let candidate = satispay ? parsedRows.filter(satispayRowIsSpesa) : parsedRows;
 
+  // Su carte e conto corrente gli addebiti PayPal sono giroconti: la
+  // spesa vera si verifica caricando l'estratto PayPal, quindi qui li
+  // ignoriamo per non contarli due volte.
+  let paypalIgnorati = 0;
+  if (source !== "PayPal") {
+    const prima = candidate.length;
+    candidate = candidate.filter(
+      (r) => !/paypal/i.test(String(r[mapDescription.value] || ""))
+    );
+    paypalIgnorati = prima - candidate.length;
+  }
+
   // rileva il formato delle date guardando l'intera colonna
   const dateOrder = detectDateOrder(candidate.map((r) => r[mapDate.value]));
 
@@ -1475,6 +1489,9 @@ runBtn.addEventListener("click", async () => {
     msg += satispay
       ? " (esclusi salvadanaio, ricariche e accrediti, che non sono spese)."
       : " (esclusi gli accrediti, che non sono spese).";
+  }
+  if (paypalIgnorati > 0) {
+    msg += ` Ho ignorato ${paypalIgnorati} addebiti PayPal: caricherai l'estratto PayPal per verificarli.`;
   }
   message.textContent = msg;
   renderResults(matches, unmatchedTx, unmatchedExpenses);
